@@ -2,17 +2,19 @@ import torch
 from torch.nn import functional
 from spred.util import cudaify
 from tqdm import tqdm
+from abc import ABC, abstractmethod
 
 
-class Decoder:
+class Decoder(ABC):
 
     def get_loss(self):
         if self.running_loss_denom == 0:
             return None
         return self.running_loss_total / self.running_loss_denom
 
+    @abstractmethod
     def make_predictions(self, outputs, labels, conf):
-        raise NotImplementedError("**ABSTRACT METHOD**")
+        ...
 
     def __call__(self, net, data, loss_f=None):
         net.eval()

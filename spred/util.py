@@ -25,10 +25,6 @@ def cudaify(x):
         return x
 
 
-def abstract_method():
-    raise NotImplementedError("This method has to be implemented in the child class.")
-
-
 def predict_simple(output):
     return output.argmax(dim=1)
 

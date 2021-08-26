@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib import rcParams
 import json
 rcParams['font.family'] = 'sans-serif'
-rcParams['font.sans-serif'] = ['Ubuntu Condensed']
+rcParams['font.sans-serif'] = ['Tahoma', 'DejaVu Sans', 'Ubuntu Condensed']
 
 
 class Evaluator:

@@ -1,14 +1,9 @@
+from abc import ABC, abstractmethod
 from spred.analytics import Evaluator, ExperimentResult, EpochResult
 from spred.util import cudaify
 
 
-class Decoder:
-
-    def __call__(self, net, data):
-        raise NotImplementedError("**ABSTRACT METHOD**")
-
-
-class Trainer:
+class Trainer(ABC):
     
     def __init__(self, config, criterion, optimizer, train_loader, val_loader,
                  decoder, n_epochs, scheduler):
@@ -21,8 +16,9 @@ class Trainer:
         self.decoder = decoder
         self.scheduler = scheduler
 
+    @abstractmethod
     def _epoch_step(self, model):
-        raise NotImplementedError("**ABSTRACT METHOD**")
+        ...
     
     def __call__(self, model):
         print("Training with config:")

@@ -1,9 +1,8 @@
 import torch.optim as optim
 from spred.loss import CrossEntropyLoss, NLLLoss, AbstainingLoss
-from spred.loss import ConfidenceLoss4, PairwiseConfidenceLoss
-from spred.dac import DACLoss
+from spred.loss import ConfidenceLoss4, PairwiseConfidenceLoss, DACLoss
 from spred.decoder import InterfaceADecoder, InterfaceBDecoder
-from abc import ABC
+from abc import ABC, abstractmethod
 
 
 class TaskFactory(ABC):
@@ -19,17 +18,21 @@ class TaskFactory(ABC):
         self.config = config
         self.architecture = self.config['network']['architecture']
 
+    @abstractmethod
     def train_loader_factory(self):
-        raise NotImplementedError("Cannot call on abstract class.")
+        ...
 
+    @abstractmethod
     def val_loader_factory(self):
-        raise NotImplementedError("Cannot call on abstract class.")
+        ...
 
+    @abstractmethod
     def model_factory(self, data):
-        raise NotImplementedError("Cannot call on abstract class.")
+        ...
 
+    @abstractmethod
     def select_trainer(self):
-        raise NotImplementedError("Cannot call on abstract class.")
+        ...
 
     def decoder_factory(self):
         return self._decoder_lookup[self.architecture]()

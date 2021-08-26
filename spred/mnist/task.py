@@ -26,7 +26,6 @@ class MnistTaskFactory(TaskFactory):
                               'abstaining': InterfaceBFeedforward}
         self.confuse = self.config['task']['confuse']
         self.bsz = self.config['trainer']['bsz']
-        print('hiiiii')
         self.architecture = self.config['network']['architecture']
 
     def train_loader_factory(self):

@@ -1,6 +1,11 @@
-class Loader:
-    def __iter__(self):
-        raise NotImplementedError("This feature needs to be implemented in the child class.")
+from abc import ABC, abstractmethod
 
+
+class Loader(ABC):
+    @abstractmethod
+    def __iter__(self):
+        ...
+
+    @abstractmethod
     def __len__(self):
-        raise NotImplementedError("This feature needs to be implemented in the child class.")
+        ...
