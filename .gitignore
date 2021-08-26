@@ -1,0 +1,8 @@
+aux
+acctoken.txt
+data/
+models/
+*egg-info*
+*_pycache_*
+spred/mnist/data/
+spred/mnist/saved/

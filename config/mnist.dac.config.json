@@ -1,0 +1,27 @@
+[
+  {
+    "task": {
+      "name": "mnist",
+      "confuse": "all"
+    },
+    "trainer": {
+      "style": "single",
+      "architecture": "abstaining",
+      "confidence": "max_non_abs",
+      "optimizer": {
+        "name": "sgd",
+        "lr": 0.02,
+        "weight_decay": 5e-4,
+        "nesterov": true,
+        "momentum": 0.9
+      },
+      "bsz": 64,
+      "n_epochs": 30,
+      "loss": {
+        "name": "conf1",
+        "alpha": 0.5,
+        "warmup_epochs": 3
+      }
+    }
+  }
+]
