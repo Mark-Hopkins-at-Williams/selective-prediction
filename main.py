@@ -14,7 +14,10 @@ if not os.path.isdir(MODELS_DIR):
 if __name__ == "__main__":
     # subprocess.check_call([sys.executable, "-m", "pip", "install", "-e",
     #                        "research-wsd/"])
-    config_root = "small"
+    if len(sys.argv) > 1:
+        config_root = sys.argv[1]
+    else:
+        config_root = "small"
     config_ext = ".config.json"
     config_path = os.path.join("config", config_root + config_ext)
     output_path = os.path.join(MODELS_DIR, config_root + ".results.json")

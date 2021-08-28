@@ -1,7 +1,7 @@
 import torch
-from spred.mnist.model import InterfaceAFeedforward
-from spred.mnist.model import InterfaceBFeedforward
-from spred.mnist.model import InterfaceCFeedforward
+from spred.model import InterfaceAFeedforward
+from spred.model import InterfaceBFeedforward
+from spred.model import InterfaceCFeedforward
 
 
 class ExampleMnistLoader:

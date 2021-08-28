@@ -13,9 +13,8 @@ class ConfidenceLoss(torch.nn.Module, ABC):
     def __init__(self):
         super(ConfidenceLoss, self).__init__()
 
-    @abstractmethod
     def notify(self, epoch):
-        ...
+        pass
 
 
 class SingleConfidenceLoss(ConfidenceLoss):
@@ -168,7 +167,7 @@ class DACLoss(SingleConfidenceLoss):
         if self.epoch <= self.learn_epochs:
             loss = functional.cross_entropy(input_batch, target_batch, reduction='none')
             h_c = functional.cross_entropy(input_batch[:, :-1], target_batch).detach()
-            p_out = torch.exp(F.log_softmax(input_batch, dim=1)).detach()
+            p_out = torch.exp(functional.log_softmax(input_batch, dim=1)).detach()
             p_out_abstain = p_out[:, -1].detach()
             # update instantaneous alpha_thresh
             self.alpha_thresh = Variable(((1. - p_out_abstain) * h_c).mean().data)
@@ -184,7 +183,7 @@ class DACLoss(SingleConfidenceLoss):
             # calculate cross entropy only over true classes
             h_c = functional.cross_entropy(input_batch[:, 0:-1], target_batch, reduce='none')
             # probabilities of abstention  class
-            p_out = torch.exp(F.log_softmax(input_batch, dim=1))
+            p_out = torch.exp(functional.log_softmax(input_batch, dim=1))
             p_out_abstain = torch.min(p_out[:, -1],
                                       cudaify(Variable(torch.tensor([1. - self.epsilon]))))
             # update instantaneous alpha_thresh

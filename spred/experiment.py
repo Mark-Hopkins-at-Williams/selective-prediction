@@ -1,8 +1,10 @@
 import json
-from spred.mnist.task import MnistTaskFactory
+from spred.tasks.mnist.task import MnistTaskFactory
+from spred.tasks.normals.task import NormalsTaskFactory
 from spred.analytics import ResultDatabase
 
-task_factories = {'mnist': MnistTaskFactory}
+task_factories = {'mnist': MnistTaskFactory,
+                  'normals': NormalsTaskFactory}
 
 
 class Experiment:

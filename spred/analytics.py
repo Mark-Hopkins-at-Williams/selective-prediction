@@ -1,11 +1,33 @@
 from sklearn import metrics
 import numpy as np
+# from scipy.stats import kendalltau
 from functools import reduce
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
 import json
 rcParams['font.family'] = 'sans-serif'
 rcParams['font.sans-serif'] = ['Tahoma', 'DejaVu Sans', 'Ubuntu Condensed']
+
+
+def kendall_tau_distance(confidences, labels):
+    n_discordant = 0
+    n_positives_so_far = 0
+    for (conf, label) in sorted(zip(confidences, labels)):
+        if label == 1:
+            n_positives_so_far += 1
+        else:
+            n_discordant += n_positives_so_far
+            # TODO: account for ties
+    return n_discordant
+
+
+def relativized_kendall_tau_distance(confidences, labels):
+    dist = kendall_tau_distance(confidences, labels)
+    worst_case = kendall_tau_distance(confidences, reversed(sorted(labels)))
+    return dist/worst_case
+
+
+kendalltau = relativized_kendall_tau_distance
 
 
 class Evaluator:
@@ -20,6 +42,8 @@ class Evaluator:
         self.n_correct = 0
         self.n_published = 0
         self.n_preds = len(predictions)
+        self.ktau = kendalltau([pred['confidence'] for pred in predictions],
+                               [int(pred['pred'] == pred['gold']) for pred in predictions])
         for result in predictions:
             prediction = result['pred']
             gold = result['gold']
@@ -62,6 +86,9 @@ class Evaluator:
 
     def num_predictions(self):
         return self.n_preds
+
+    def kendall_tau_b(self):
+        return self.ktau
 
     def pr_curve(self):
         return self.precision, self.recall, self.aupr
@@ -119,6 +146,7 @@ class Evaluator:
         _, _, capacity = self.risk_coverage_curve()
         return EvaluationResult.from_dict(
             {'train_loss': self._loss,
+             'kendall_tau': self.ktau,
              'avg_err_conf': (self.avg_err_conf / self.n_error
                               if self.n_error > 0 else 0),
              'avg_crr_conf': (self.avg_crr_conf / self.n_correct
@@ -135,7 +163,7 @@ class Evaluator:
 
 class EvaluationResult:
     def __init__(self, train_loss, auroc, aupr, capacity, precision, coverage,
-                 avg_err_conf, avg_crr_conf):
+                 avg_err_conf, avg_crr_conf, kendall_tau):
         self.train_loss = train_loss
         self.auroc = auroc
         self.aupr = aupr
@@ -144,6 +172,7 @@ class EvaluationResult:
         self.coverage = coverage
         self.avg_err_conf = avg_err_conf
         self.avg_crr_conf = avg_crr_conf
+        self.kendall_tau = kendall_tau
 
     def loss(self):
         return self.train_loss
@@ -154,6 +183,7 @@ class EvaluationResult:
 
     def as_dict(self):
         return {'train_loss': self.train_loss,
+                'kendall_tau': self.kendall_tau,
                 'avg_err_conf': self.avg_err_conf,
                 'avg_crr_conf': self.avg_crr_conf,
                 'auroc': self.auroc,
@@ -165,7 +195,6 @@ class EvaluationResult:
     @classmethod
     def from_dict(cls, d):
         return cls(**d)
-
 
 
 class EpochResult:
@@ -213,12 +242,12 @@ class ExperimentResult:
         train_losses = [r.get_train_loss() for (_, r) in indexed_results]
         valid_losses = [r.validation_result.loss() for (_, r) in indexed_results]
         valid_aurocs = [r.validation_result.auroc for (_, r) in indexed_results]
-        valid_auprs = [r.validation_result.aupr for (_, r) in indexed_results]
+        valid_ktaus = [r.validation_result.kendall_tau for (_, r) in indexed_results]
         ax1.plot(x_axis, train_losses, 'b', label='train loss')
         ax1.plot(x_axis, valid_losses, 'r', label='valid loss')
         ax1.set(ylabel='loss')
         ax2.plot(x_axis, valid_aurocs, 'g', label='valid auroc')
-        ax2.plot(x_axis, valid_auprs, 'orange', label='valid aupr')
+        ax2.plot(x_axis, valid_ktaus, 'orange', label='valid ktau')
         ax1.legend(loc='upper right')
         ax2.legend(loc='lower right')
         ax2.set(ylabel='metric')

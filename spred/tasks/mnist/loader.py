@@ -1,4 +1,5 @@
 import torch
+from spred.loader import Loader
 
 
 def confuse_two(labels):
@@ -33,10 +34,11 @@ confuser_lookup = {'two': confuse_two,
                    'all': confuse_all}
 
 
-class MnistLoader:
+class MnistLoader(Loader):
     
     def __init__(self, dataset, bsz=64, shuffle = True, confuser=lambda x: x):
-        self.loader = torch.utils.data.DataLoader(dataset, 
+        super().__init__()
+        self.loader = torch.utils.data.DataLoader(dataset,
                                                   batch_size=bsz, 
                                                   shuffle=shuffle)
         self.confuser = confuser
@@ -57,8 +59,9 @@ class ConfusedMnistLoader(MnistLoader):
         super().__init__(dataset, bsz, shuffle, confuser_lookup[confuser])
         
 
-class MnistPairLoader:
+class MnistPairLoader(Loader):
     def __init__(self, dataset, bsz=64, shuffle=True, confuser=lambda x:x):
+        super().__init__()
         self.bsz = bsz
         self.dataset = dataset
         self.single_img_loader1 = torch.utils.data.DataLoader(dataset, 

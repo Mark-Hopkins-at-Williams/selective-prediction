@@ -3,11 +3,9 @@ from os.path import join
 from torchvision import datasets
 from torchvision import transforms
 from spred.task import TaskFactory
-from spred.mnist.model import InterfaceAFeedforward, InterfaceBFeedforward
-from spred.mnist.train import SingleTrainer as MnistSingleTrainer
-from spred.mnist.train import PairwiseTrainer as MnistPairwiseTrainer
-from spred.mnist.loader import MnistLoader, ConfusedMnistLoader
-from spred.mnist.loader import MnistPairLoader, ConfusedMnistPairLoader
+from spred.model import InterfaceAFeedforward, InterfaceBFeedforward
+from spred.tasks.mnist.loader import MnistLoader, ConfusedMnistLoader
+from spred.tasks.mnist.loader import MnistPairLoader, ConfusedMnistPairLoader
 
 
 DATA_DIR = os.getenv('SPRED_DATA').strip()
@@ -53,6 +51,3 @@ class MnistTaskFactory(TaskFactory):
         model_constructor = self._model_lookup[self.architecture]
         return model_constructor(confidence_extractor=self.config['network']['confidence'])
 
-    def select_trainer(self):
-        style = "pairwise" if self.architecture == 'confident' else "single"
-        return MnistPairwiseTrainer if style == "pairwise" else MnistSingleTrainer

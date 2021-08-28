@@ -1,0 +1,23 @@
+[
+  {
+    "task": {
+      "name": "normals"
+    },
+    "network": {
+      "architecture": "simple",
+      "confidence": "max_prob"
+    },
+    "trainer": {
+      "optimizer": {
+        "name": "sgd",
+        "lr": 0.003,
+        "momentum": 0.9
+      },
+      "bsz": 64,
+      "n_epochs": 20,
+      "loss": {
+        "name": "crossentropy"
+      }
+    }
+  }
+]
