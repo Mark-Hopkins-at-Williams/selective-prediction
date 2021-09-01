@@ -1,6 +1,5 @@
 from sklearn import metrics
 import numpy as np
-# from scipy.stats import kendalltau
 from functools import reduce
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
@@ -9,15 +8,32 @@ rcParams['font.family'] = 'sans-serif'
 rcParams['font.sans-serif'] = ['Tahoma', 'DejaVu Sans', 'Ubuntu Condensed']
 
 
-def kendall_tau_distance(confidences, labels):
+def harsh_sort(confidences, predictions):
+    sorted_pairs = sorted(zip(confidences, predictions))
+    result = []
+    prev_conf = None
+    sublist = []
+    for (conf, pred) in sorted_pairs:
+        if prev_conf is None:
+            prev_conf = conf
+            sublist = [pred]
+        elif conf > prev_conf:
+            prev_conf = conf
+            result += sublist
+            sublist = [pred]
+        else:
+            sublist = [pred] + sublist
+    return result + sublist
+
+
+def kendall_tau_distance(confidences, predictions):
     n_discordant = 0
     n_positives_so_far = 0
-    for (conf, label) in sorted(zip(confidences, labels)):
-        if label == 1:
+    for pred in harsh_sort(confidences, predictions):
+        if pred == 1:
             n_positives_so_far += 1
         else:
             n_discordant += n_positives_so_far
-            # TODO: account for ties
     return n_discordant
 
 
@@ -87,7 +103,7 @@ class Evaluator:
     def num_predictions(self):
         return self.n_preds
 
-    def kendall_tau_b(self):
+    def kendall_tau(self):
         return self.ktau
 
     def pr_curve(self):

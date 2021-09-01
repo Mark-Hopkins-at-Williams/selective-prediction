@@ -4,8 +4,8 @@
       "name": "normals"
     },
     "network": {
-      "architecture": "abstaining",
-      "confidence": "max_non_abs"
+      "architecture": "simple",
+      "confidence": "max_prob"
     },
     "trainer": {
       "optimizer": {
@@ -14,11 +14,10 @@
         "momentum": 0.9
       },
       "bsz": 64,
-      "n_epochs": 30,
+      "n_epochs": 35,
       "loss": {
-        "name": "dac",
-        "warmup_epochs": 5,
-        "total_epochs": 30
+        "name": "ce_w_er",
+        "lambda_param": 0.1
       }
     }
   }

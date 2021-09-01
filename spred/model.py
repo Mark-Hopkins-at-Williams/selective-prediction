@@ -45,22 +45,23 @@ class Feedforward(nn.Module):
         self.input_size = input_size
         self.output_size = output_size
         self.confidence_extractor = confidence_extractor_lookup[confidence_extractor]
-        self.dropout = nn.Dropout(p=0.2)
-        self.linear1 = cudaify(nn.Linear(input_size, hidden_sizes[0]))
-        self.linear2 = cudaify(nn.Linear(hidden_sizes[0], hidden_sizes[1]))
-        self.final = cudaify(nn.Linear(hidden_sizes[1], output_size))
-        self.softmax = cudaify(nn.Softmax(dim=1))
-        self.relu1 = nn.ReLU()
-        self.relu2 = nn.ReLU()
+        self.dropout = nn.Dropout(p=0.5)
+        self.linears = nn.ModuleList([])
+        self.linears.append(cudaify(nn.Linear(input_size, hidden_sizes[0])))
+        for i in range(len(hidden_sizes)-1):
+            self.linears.append(cudaify(nn.Linear(hidden_sizes[i], hidden_sizes[i+1])))
+        self.final = cudaify(nn.Linear(hidden_sizes[-1], output_size))
+        self.relu = nn.ReLU()
 
     def initial_layers(self, input_vec):
         nextout = cudaify(input_vec)
-        nextout = self.linear1(nextout)
-        nextout = self.relu1(nextout)
-        nextout = self.dropout(nextout)
-        nextout = self.linear2(nextout)
-        nextout = self.relu2(nextout)
-        nextout = self.dropout(nextout)
+        for layer in self.linears:
+            nextout = layer(nextout)
+            nextout = self.relu(nextout)
+            nextout = self.dropout(nextout)
+        # nextout = self.linear2(nextout)
+        # nextout = self.relu(nextout)
+        # nextout = self.dropout(nextout)
         return nextout
 
     def final_layers(self, input_vec):

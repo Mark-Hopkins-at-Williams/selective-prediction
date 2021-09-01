@@ -1,7 +1,8 @@
 import torch.optim as optim
 from spred.decoder import InterfaceADecoder, InterfaceBDecoder
 from spred.loss import CrossEntropyLoss, NLLLoss, AbstainingLoss
-from spred.loss import ConfidenceLoss4, PairwiseConfidenceLoss, DACLoss
+from spred.loss import PairwiseConfidenceLoss, DACLoss
+from spred.loss import CrossEntropyLossWithErrorRegularization
 from spred.model import InterfaceAFeedforward, InterfaceBFeedforward
 from spred.train import SingleTrainer, PairwiseTrainer
 from spred.viz import Visualizer
@@ -13,9 +14,9 @@ class TaskFactory(ABC):
         self.criterion_lookup = {'crossentropy': CrossEntropyLoss,
                                  'nll': NLLLoss,
                                  'conf1': AbstainingLoss,
-                                 'conf4': ConfidenceLoss4,
                                  'pairwise': PairwiseConfidenceLoss,
-                                 'dac': DACLoss}
+                                 'dac': DACLoss,
+                                 'ce_w_er': CrossEntropyLossWithErrorRegularization}
         self._decoder_lookup = {'simple': InterfaceADecoder,
                                 'abstaining': InterfaceBDecoder}
         self._model_lookup = {'simple': InterfaceAFeedforward,
