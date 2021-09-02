@@ -39,7 +39,7 @@ def kendall_tau_distance(confidences, predictions):
 
 def relativized_kendall_tau_distance(confidences, labels):
     dist = kendall_tau_distance(confidences, labels)
-    worst_case = kendall_tau_distance(confidences, reversed(sorted(labels)))
+    worst_case = kendall_tau_distance(sorted(confidences), reversed(sorted(labels)))
     return dist/worst_case
 
 

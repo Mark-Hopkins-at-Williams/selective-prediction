@@ -111,7 +111,6 @@ class DACLoss(SingleConfidenceLoss):
         renormalized_gold_probs = gold_values(renormalized_nonabstain_probs(output),
                                               gold)
         term1 = nonabstain_prob_mass(output) * (-torch.log(renormalized_gold_probs))
-        term2 = 1.0 / (1.0 - abstain_probs(output).clamp(max=0.9999))
         if self.epoch < self.warmup_epochs:
             t1 = term1.clone().detach()
             if self.loss_moving_average is None:
@@ -120,13 +119,15 @@ class DACLoss(SingleConfidenceLoss):
                 self.loss_moving_average = ((1 - self.mu) * self.loss_moving_average
                                             + self.mu * torch.sum(t1))
             multiplier = 0.0
+            return torch.sum(term1)
         else:
+            term2 = 1.0 / (1.0 - abstain_probs(output).clamp(max=0.9999))
             alpha = self.loss_moving_average / self.rho
             alpha_max = self.loss_moving_average
             discount = ((self.epoch - self.warmup_epochs) /
                         (self.total_epochs-self.warmup_epochs))
             multiplier = alpha + discount * (alpha_max - alpha)
-        return torch.sum(term1 + multiplier * term2)
+            return torch.sum(term1 + multiplier * term2)
 
 
 class CrossEntropyLossWithErrorRegularization(SingleConfidenceLoss):

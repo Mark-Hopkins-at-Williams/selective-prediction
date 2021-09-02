@@ -47,7 +47,8 @@ class MnistTaskFactory(TaskFactory):
             loader = MnistLoader(ds, self.bsz, shuffle=True)
         return loader
 
-    def model_factory(self, data):
-        model_constructor = self._model_lookup[self.architecture]
-        return model_constructor(confidence_extractor=self.config['network']['confidence'])
+    def input_size(self):
+        return 784
 
+    def output_size(self):
+        return 10

@@ -36,8 +36,11 @@ confuser_lookup = {'two': confuse_two,
 
 class MnistLoader(Loader):
     
-    def __init__(self, dataset, bsz=64, shuffle = True, confuser=lambda x: x):
+    def __init__(self, dataset, bsz=64, shuffle=True, confuser=lambda x: x):
         super().__init__()
+        self.dataset = dataset
+        self.bsz = bsz
+        self.shuffle = shuffle
         self.loader = torch.utils.data.DataLoader(dataset,
                                                   batch_size=bsz, 
                                                   shuffle=shuffle)
@@ -51,6 +54,17 @@ class MnistLoader(Loader):
 
     def __len__(self):
         return len(self.loader)
+
+    def input_size(self):
+        return 784
+
+    def output_size(self):
+        return 10
+
+    def restart(self):
+        result = MnistLoader(self.dataset, self.bsz, self.shuffle, self.confuser)
+        result.batches = self.batches
+        return result
 
 
 class ConfusedMnistLoader(MnistLoader):

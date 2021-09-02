@@ -91,6 +91,5 @@ class TaskFactory(ABC):
         else:
             return None
 
-    @abstractmethod
     def visualizer_factory(self):
         return None

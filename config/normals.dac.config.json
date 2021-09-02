@@ -1,7 +1,8 @@
 [
   {
     "task": {
-      "name": "normals"
+      "name": "normals",
+      "noise_dim": 50
     },
     "network": {
       "architecture": "abstaining",

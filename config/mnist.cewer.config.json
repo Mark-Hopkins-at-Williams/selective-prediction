@@ -1,8 +1,8 @@
 [
   {
     "task": {
-      "name": "normals",
-      "noise_dim": 50
+      "name": "mnist",
+      "confuse": "all"
     },
     "network": {
       "architecture": "simple",
@@ -15,7 +15,7 @@
         "momentum": 0.9
       },
       "bsz": 64,
-      "n_epochs": 35,
+      "n_epochs": 15,
       "loss": {
         "name": "ce_w_er",
         "lambda_param": 0.1

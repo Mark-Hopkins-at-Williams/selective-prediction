@@ -29,7 +29,7 @@ def generate_samples(means, variances, noise_dim, num_samples):
 
 class NormalsLoader(Loader):
     
-    def __init__(self, num_batches, bsz=128, noise_dim=50):
+    def __init__(self, num_batches, bsz, noise_dim):
         super().__init__()
         self.bsz = bsz
         self.num_batches = num_batches
@@ -65,6 +65,6 @@ class NormalsLoader(Loader):
         return 2
 
     def restart(self):
-        result = NormalsLoader(self.num_batches, self.bsz)
+        result = NormalsLoader(self.num_batches, self.bsz, self.noise_dim)
         result.batches = self.batches
         return result

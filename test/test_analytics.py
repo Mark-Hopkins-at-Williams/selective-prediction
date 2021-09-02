@@ -42,6 +42,9 @@ class TestEvaluator(unittest.TestCase):
         assert kendall_tau_distance([1, 2, 2, 3, 5], [0, 1, 0, 1, 1]) == 1
         assert kendall_tau_distance([2, 2, 2, 2, 2], [0, 1, 0, 1, 1]) == 6
 
+    def test_relativized_kendall_tau_distance(self):
+        assert kendall_tau_distance([1.4, 1.2, 1.3, 1.1], [0, 0, 1, 1]) == 0.75
+
     def test_pr_curve(self):
         evaluator = Evaluator(self.preds1)
         precision, recall, auc = evaluator.pr_curve()

@@ -1,7 +1,8 @@
 [
   {
     "task": {
-      "name": "normals"
+      "name": "normals",
+      "noise_dim": 50
     },
     "network": {
       "architecture": "simple",
@@ -14,7 +15,7 @@
         "momentum": 0.9
       },
       "bsz": 64,
-      "n_epochs": 20,
+      "n_epochs": 15,
       "loss": {
         "name": "crossentropy"
       }

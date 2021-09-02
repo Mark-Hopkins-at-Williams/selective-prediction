@@ -6,7 +6,7 @@
     },
     "network": {
       "architecture": "simple",
-      "confidence": "max_prob"
+      "confidence": "mc_dropout"
     },
     "trainer": {
       "optimizer": {
@@ -15,10 +15,9 @@
         "momentum": 0.9
       },
       "bsz": 64,
-      "n_epochs": 35,
+      "n_epochs": 40,
       "loss": {
-        "name": "ce_w_er",
-        "lambda_param": 0.1
+        "name": "crossentropy"
       }
     }
   }
