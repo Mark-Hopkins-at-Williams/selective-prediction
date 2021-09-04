@@ -9,7 +9,7 @@ class ColaTaskFactory(TaskFactory):
         self.bsz = self.config['trainer']['bsz']
         self.architecture = self.config['network']['architecture']
         self.train_loader = ColaLoader(self.bsz, split="train")
-        self.val_loader = ColaLoader(self.bsz, split="dev")
+        self.val_loader = ColaLoader(self.bsz, split="validation")
 
     def train_loader_factory(self):
         return self.train_loader.restart()
