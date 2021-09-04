@@ -27,6 +27,8 @@ class Decoder(ABC):
             batch = {k: v.to(self.device) for k, v in batch.items()}
             with torch.no_grad():
                 outputs, conf = net(batch)
+                print(outputs)
+                print(conf)
             if loss_f is not None:
                 # loss = loss_f(outputs, conf, batch['labels'])
                 # print(loss)
