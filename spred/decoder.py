@@ -29,6 +29,7 @@ class Decoder(ABC):
                 outputs, conf = net(batch)
             if loss_f is not None:
                 loss = loss_f(outputs, conf, batch['labels'])
+                print(loss)
                 self.running_loss_total += loss.item()
                 self.running_loss_denom += 1  # TODO: why 1 and not len(images)?
             for pred in self.make_predictions(outputs, batch['labels'], conf):
