@@ -16,10 +16,11 @@ class ColaLoader(Loader):
         tokenized_datasets = tokenized_datasets.remove_columns(["sentence", "idx"])
         tokenized_datasets = tokenized_datasets.rename_column("label", "labels")
         tokenized_datasets.set_format("torch")
-        # small_dataset = tokenized_datasets[split].shuffle(seed=42).select(range(1000))
-        full_dataset = tokenized_datasets[split]
+        print(tokenized_datasets.keys())
+        dataset = tokenized_datasets[split].shuffle(seed=42).select(range(1000))
+        # dataset = tokenized_datasets[split]
         shuffle = (split == "train")
-        self.dataloader = DataLoader(full_dataset, shuffle=shuffle, batch_size=bsz)
+        self.dataloader = DataLoader(dataset, shuffle=shuffle, batch_size=bsz)
 
     def tokenize_function(self, examples):
         return self.tokenizer(examples["sentence"], padding="max_length", truncation=True)
