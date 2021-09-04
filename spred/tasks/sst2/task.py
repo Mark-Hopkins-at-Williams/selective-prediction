@@ -1,8 +1,8 @@
 from spred.task import TaskFactory
-from spred.tasks.glue.loader import ColaLoader
+from spred.tasks.sst2.loader import Sst2Loader
 from transformers import get_scheduler
 
-class ColaTaskFactory(TaskFactory):
+class Sst2TaskFactory(TaskFactory):
 
     def __init__(self, config):
         super().__init__(config)
@@ -10,8 +10,8 @@ class ColaTaskFactory(TaskFactory):
 
     def train_loader_factory(self):
         bsz = self.config['trainer']['bsz']
-        return ColaLoader(bsz, split="train")
+        return Sst2Loader(bsz, split="train")
 
     def val_loader_factory(self):
         bsz = self.config['trainer']['bsz']
-        return ColaLoader(bsz, split="validation")
+        return Sst2Loader(bsz, split="validation")

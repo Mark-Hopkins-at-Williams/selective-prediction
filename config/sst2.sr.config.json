@@ -1,0 +1,25 @@
+[
+  {
+    "task": {
+      "name": "sst2"
+    },
+    "network": {
+      "architecture": "pretrained",
+      "confidence": "max_prob"
+    },
+    "trainer": {
+      "optimizer": {
+        "name": "adamw",
+        "lr": 5e-5
+      },
+      "scheduler": {
+        "name": "linear"
+      },
+      "bsz": 8,
+      "n_epochs": 15,
+      "loss": {
+        "name": "crossentropy"
+      }
+    }
+  }
+]
