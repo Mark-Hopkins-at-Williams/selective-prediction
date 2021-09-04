@@ -6,14 +6,15 @@ class ColaTaskFactory(TaskFactory):
 
     def __init__(self, config):
         super().__init__(config)
-        self.bsz = self.config['trainer']['bsz']
         self.architecture = self.config['network']['architecture']
 
     def train_loader_factory(self):
-        return ColaLoader(self.bsz, split="train")
+        bsz = self.config['trainer']['bsz']
+        return ColaLoader(bsz, split="train")
 
     def val_loader_factory(self):
-        return ColaLoader(self.bsz, split="validation")
+        bsz = self.config['trainer']['bsz']
+        return ColaLoader(bsz, split="validation")
 
     def scheduler_factory(self, optimizer):
         lr_scheduler = get_scheduler(
