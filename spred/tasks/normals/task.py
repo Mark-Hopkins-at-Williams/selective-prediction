@@ -10,22 +10,24 @@ class NormalsTaskFactory(TaskFactory):
         self.bsz = self.config['trainer']['bsz']
         self.architecture = self.config['network']['architecture']
         self.noise_dim = self.config['task']['noise_dim']
-        self.n_train_batches = 200
-        self.n_val_batches = 100
-        self.train_loader = NormalsLoader(self.n_train_batches, self.bsz, self.noise_dim)
-        self.val_loader = NormalsLoader(self.n_val_batches, self.bsz, self.noise_dim)
 
     def train_loader_factory(self):
-        return self.train_loader.restart()
+        if self.train_loader is None:
+            n_train_batches = self.config['task']['n_train_batches']
+            bsz = self.config['trainer']['bsz']
+            noise_dim = self.config['task']['noise_dim']
+            return NormalsLoader(n_train_batches, bsz, noise_dim)
+        else:
+            return self.train_loader.restart()
 
     def val_loader_factory(self):
-        return self.val_loader.restart()
-
-    def input_size(self):
-        return self.train_loader.input_size()
-
-    def output_size(self):
-        return self.train_loader.output_size()
+        if self.validation_loader is None:
+            n_validation_batches = self.config['task']['n_validation_batches']
+            bsz = self.config['trainer']['bsz']
+            noise_dim = self.config['task']['noise_dim']
+            return NormalsLoader(n_validation_batches, bsz, noise_dim)
+        else:
+            return self.validation_loader.restart()
 
     def visualizer_factory(self):
         return NormalsVisualizer(self.config['trainer']['n_epochs'])

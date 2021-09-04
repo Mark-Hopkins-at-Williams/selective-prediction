@@ -59,12 +59,13 @@ class SingleTrainer(Trainer):
         denom = 0
         for batch in tqdm(self.train_loader, total=len(self.train_loader)):
             batch = {k: v.to(self.device) for k, v in batch.items()}
-            output, conf = model(batch) # TODO: update FeedForward models with this API
+            output, conf = model(batch)
             loss = self.criterion(output, conf, batch['labels'])
             loss.backward()
             # torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1)
             self.optimizer.step()
-            self.scheduler.step() # TODO: update other tasks with this
+            if self.scheduler is not None:
+                self.scheduler.step()
             self.optimizer.zero_grad()
             running_loss += loss.item()
             denom += 1

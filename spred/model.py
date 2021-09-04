@@ -1,23 +1,23 @@
 import torch
 from torch import nn
-import torch.nn.functional as F
+from torch.nn import functional
 from spred.util import cudaify
 from spred.loss import softmax, gold_values
 from transformers import AutoModelForSequenceClassification
 
 
 def inv_abstain_prob(_, output):
-    probs = F.softmax(output.clamp(min=-25, max=25), dim=-1)
+    probs = functional.softmax(output.clamp(min=-25, max=25), dim=-1)
     return 1.0 - probs[:, -1]
 
 
 def max_nonabstain_prob(_, output):
-    probs = F.softmax(output.clamp(min=-25, max=25), dim=-1)
+    probs = functional.softmax(output.clamp(min=-25, max=25), dim=-1)
     return probs[:, :-1].max(dim=1).values
 
 
 def max_prob(_, output):
-    probs = F.softmax(output.clamp(min=-25, max=25), dim=-1)
+    probs = functional.softmax(output.clamp(min=-25, max=25), dim=-1)
     return probs.max(dim=1).values
 
 
@@ -96,9 +96,10 @@ class Feedforward(nn.Module):
             confidences = None
         return nextout, confidences
 
-    def forward(self, input_vec, compute_conf=True):
-        nextout = self.initial_layers(input_vec)
-        result, confidence = self.final_layers(nextout, input_vec, compute_conf)
+    def forward(self, batch, compute_conf=True):
+        input_vecs = batch['input_ids']
+        nextout = self.initial_layers(input_vecs)
+        result, confidence = self.final_layers(nextout, input_vecs, compute_conf)
         return result, confidence
 
 

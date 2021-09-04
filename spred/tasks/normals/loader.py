@@ -6,14 +6,6 @@ from random import shuffle
 from spred.loader import Loader
 
 
-def x_coords(pts):
-    return [pt[0] for pt in pts]
-
-
-def y_coords(pts):
-    return [pt[1] for pt in pts]
-
-
 def sample_2d_normal(means, variances, num_samples):
     samples = multivariate_normal(means,
                                   diag(variances),
@@ -53,7 +45,7 @@ class NormalsLoader(Loader):
 
     def __iter__(self):
         for instances, labels in self.batches:
-            yield instances, labels
+            yield {'input_ids': instances, 'labels': labels}
 
     def __len__(self):
         return self.num_batches

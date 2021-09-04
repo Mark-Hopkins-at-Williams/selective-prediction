@@ -16,9 +16,7 @@ class ColaLoader(Loader):
         tokenized_datasets = tokenized_datasets.remove_columns(["sentence", "idx"])
         tokenized_datasets = tokenized_datasets.rename_column("label", "labels")
         tokenized_datasets.set_format("torch")
-        print(tokenized_datasets.keys())
-        dataset = tokenized_datasets[split].shuffle(seed=42).select(range(1000))
-        # dataset = tokenized_datasets[split]
+        dataset = tokenized_datasets[split]
         shuffle = (split == "train")
         self.dataloader = DataLoader(dataset, shuffle=shuffle, batch_size=bsz)
 

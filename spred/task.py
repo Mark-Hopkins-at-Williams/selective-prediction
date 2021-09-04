@@ -28,6 +28,10 @@ class TaskFactory(ABC):
                               'pretrained': PretrainedTransformer}
         self.config = config
         self.architecture = self.config['network']['architecture']
+        self.train_loader = None
+        self.validation_loader = None
+        self.train_loader = self.train_loader_factory()
+        self.validation_loader = self.val_loader_factory()
 
     @abstractmethod
     def train_loader_factory(self):
@@ -37,25 +41,28 @@ class TaskFactory(ABC):
     def val_loader_factory(self):
         ...
 
-    @abstractmethod
     def input_size(self):
-        ...
+        return self.train_loader.input_size()
 
-    @abstractmethod
     def output_size(self):
-        ...
+        return self.train_loader.output_size()
 
     def num_epochs(self):
         return self.config['trainer']['n_epochs']
 
     def model_factory(self):
         model_constructor = self._model_lookup[self.architecture]
-        return model_constructor(
-            # input_size=self.input_size(),  # FIX THIS API!
-            # hidden_sizes=(128, 64),
-            # output_size=self.output_size(),
-            confidence_extractor=self.config['network']['confidence']
-        )
+        if self.architecture == "simple":
+            return model_constructor(
+                input_size=self.input_size(),  # FIX THIS API!
+                hidden_sizes=(128, 64),
+                output_size=self.output_size(),
+                confidence_extractor=self.config['network']['confidence']
+            )
+        else:
+            return model_constructor(
+                confidence_extractor=self.config['network']['confidence']
+            )
 
     def select_trainer(self):
         style = "pairwise" if self.architecture == 'confident' else "single"
@@ -93,13 +100,22 @@ class TaskFactory(ABC):
         return self.criterion_lookup[lconfig['name']](**params)
 
     def scheduler_factory(self, optimizer):
-        scheduler_name = self.config['trainer']['loss']['name']
+        try:
+            scheduler_name = self.config['trainer']['scheduler']['name']
+        except KeyError:
+            scheduler_name = None
         if scheduler_name == 'dac':
             return optim.lr_scheduler.MultiStepLR(optimizer,
                                                   milestones=[60, 80, 120],
                                                   gamma=0.5)
-        else:
-            return None
+        elif scheduler_name == 'linear':
+            lr_scheduler = get_scheduler(
+                "linear",
+                optimizer=optimizer,
+                num_warmup_steps=0,
+                num_training_steps=self.num_epochs() * len(self.train_loader)
+            )
+            return lr_scheduler
 
     def visualizer_factory(self):
         return None

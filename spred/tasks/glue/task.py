@@ -8,20 +8,12 @@ class ColaTaskFactory(TaskFactory):
         super().__init__(config)
         self.bsz = self.config['trainer']['bsz']
         self.architecture = self.config['network']['architecture']
-        self.train_loader = ColaLoader(self.bsz, split="train")
-        self.val_loader = ColaLoader(self.bsz, split="validation")
 
     def train_loader_factory(self):
-        return self.train_loader.restart()
+        return ColaLoader(self.bsz, split="train")
 
     def val_loader_factory(self):
-        return self.val_loader.restart()
-
-    def input_size(self):
-        ...
-
-    def output_size(self):
-        ...
+        return ColaLoader(self.bsz, split="validation")
 
     def scheduler_factory(self, optimizer):
         lr_scheduler = get_scheduler(

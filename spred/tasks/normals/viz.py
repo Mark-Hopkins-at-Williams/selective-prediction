@@ -18,7 +18,7 @@ class NormalsVisualizer(Visualizer):
 
     def visualize(self, epoch, val_loader, results):
         if epoch == self.last_epoch:
-            val_instances, _ = next(iter(val_loader.restart()))
+            val_instances = next(iter(val_loader.restart()))['input_ids']
             pairs = [tuple(list(val_instances[i].numpy())[:2])
                      for i in range(len(val_instances))]
             class0 = [(pair, result) for (pair, result) in zip(pairs, results[:64])
