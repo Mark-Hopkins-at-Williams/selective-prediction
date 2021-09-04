@@ -7,6 +7,9 @@ from abc import ABC, abstractmethod
 
 class Decoder(ABC):
 
+    def __init__(self):
+        self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+
     def get_loss(self):
         if self.running_loss_denom == 0:
             return None
@@ -20,14 +23,15 @@ class Decoder(ABC):
         net.eval()
         self.running_loss_total = 0.0
         self.running_loss_denom = 0
-        for images, labels in tqdm(data, total=len(data)):
+        for batch in tqdm(data, total=len(data)):
+            batch = {k: v.to(device) for k, v in batch.items()}
             with torch.no_grad():
-                outputs, conf = net(cudaify(images))
+                outputs, conf = net(batch)
             if loss_f is not None:
-                loss = loss_f(outputs, conf, cudaify(labels))
+                loss = loss_f(outputs, conf, batch['labels'])
                 self.running_loss_total += loss.item()
                 self.running_loss_denom += 1  # TODO: why 1 and not len(images)?
-            for pred in self.make_predictions(outputs, labels, conf):
+            for pred in self.make_predictions(outputs, batch['labels'], conf):
                 yield pred
 
 

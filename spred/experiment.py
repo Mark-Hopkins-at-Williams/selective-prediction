@@ -1,10 +1,12 @@
 import json
 from spred.tasks.mnist.task import MnistTaskFactory
 from spred.tasks.normals.task import NormalsTaskFactory
+from spred.tasks.glue.task import ColaTaskFactory
 from spred.analytics import ResultDatabase
 
 task_factories = {'mnist': MnistTaskFactory,
-                  'normals': NormalsTaskFactory}
+                  'normals': NormalsTaskFactory,
+                  'cola': ColaTaskFactory}
 
 
 class Experiment:

@@ -3,6 +3,7 @@ from torch import nn
 import torch.nn.functional as F
 from spred.util import cudaify
 from spred.loss import softmax, gold_values
+from transformers import AutoModelForSequenceClassification
 
 
 def inv_abstain_prob(_, output):
@@ -51,7 +52,7 @@ class MCDropoutConfidence:
         self.model.train()
         preds = torch.max(output, dim=1).indices
         pred_probs = []
-        for i in range(self.n_forward_passes):
+        for _ in range(self.n_forward_passes):
             dropout_output, _ = self.model(input, compute_conf=False)
             dropout_output = softmax(dropout_output)
             pred_probs.append(gold_values(dropout_output, preds))
@@ -130,3 +131,18 @@ class InterfaceCFeedforward(Feedforward):
         confidence = self.confidence_layer(input_vec).reshape(-1)
         return nextout, confidence
 
+
+class PretrainedTransformer(nn.Module):
+
+    def __init__(self, confidence_extractor='max_prob'):
+        super().__init__()
+        self.model = AutoModelForSequenceClassification.from_pretrained("bert-base-cased", num_labels=2)
+        self.confidence_extractor = lookup_confidence_extractor(confidence_extractor, self)
+
+    def forward(self, batch, compute_conf=True):
+        outputs = self.model(**batch).logits
+        if compute_conf:
+            confidence = self.confidence_extractor(batch['input_ids'], outputs)  # TODO: should we clone and detach?
+        else:
+            confidence = None
+        return outputs, confidence

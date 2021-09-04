@@ -1,9 +1,12 @@
 import torch.optim as optim
+from transformers import AdamW
+from transformers import get_scheduler
 from spred.decoder import InterfaceADecoder, InterfaceBDecoder
 from spred.loss import CrossEntropyLoss, NLLLoss, AbstainingLoss
 from spred.loss import PairwiseConfidenceLoss, DACLoss
 from spred.loss import CrossEntropyLossWithErrorRegularization
 from spred.model import InterfaceAFeedforward, InterfaceBFeedforward
+from spred.model import PretrainedTransformer
 from spred.train import SingleTrainer, PairwiseTrainer
 from spred.viz import Visualizer
 from abc import ABC, abstractmethod
@@ -18,9 +21,11 @@ class TaskFactory(ABC):
                                  'dac': DACLoss,
                                  'ce_w_er': CrossEntropyLossWithErrorRegularization}
         self._decoder_lookup = {'simple': InterfaceADecoder,
-                                'abstaining': InterfaceBDecoder}
+                                'abstaining': InterfaceBDecoder,
+                                'pretrained': InterfaceADecoder}
         self._model_lookup = {'simple': InterfaceAFeedforward,
-                              'abstaining': InterfaceBFeedforward}
+                              'abstaining': InterfaceBFeedforward,
+                              'pretrained': PretrainedTransformer}
         self.config = config
         self.architecture = self.config['network']['architecture']
 
@@ -40,12 +45,15 @@ class TaskFactory(ABC):
     def output_size(self):
         ...
 
+    def num_epochs(self):
+        return self.config['trainer']['n_epochs']
+
     def model_factory(self):
         model_constructor = self._model_lookup[self.architecture]
         return model_constructor(
-            input_size=self.input_size(),
-            hidden_sizes=(128, 64),
-            output_size=self.output_size(),
+            # input_size=self.input_size(),  # FIX THIS API!
+            # hidden_sizes=(128, 64),
+            # output_size=self.output_size(),
             confidence_extractor=self.config['network']['confidence']
         )
 
@@ -64,7 +72,7 @@ class TaskFactory(ABC):
         optimizer = self.optimizer_factory(model)
         scheduler = self.scheduler_factory(optimizer)
         loss = self.loss_factory()
-        n_epochs = self.config['trainer']['n_epochs']
+        n_epochs = self.num_epochs()
         visualizer = self.visualizer_factory()
         trainer_class = self.select_trainer()
         trainer = trainer_class(self.config, loss, optimizer, train_loader,
@@ -72,7 +80,8 @@ class TaskFactory(ABC):
         return trainer, model
 
     def optimizer_factory(self, model):
-        optim_constrs = {'sgd': optim.SGD}
+        optim_constrs = {'sgd': optim.SGD,
+                         'adamw': AdamW}
         oconfig = self.config['trainer']['optimizer']
         optim_constr = optim_constrs[oconfig['name']]
         params = {k: v for k, v in oconfig.items() if k != 'name'}
@@ -84,7 +93,8 @@ class TaskFactory(ABC):
         return self.criterion_lookup[lconfig['name']](**params)
 
     def scheduler_factory(self, optimizer):
-        if self.config['trainer']['loss']['name'] == 'dac':
+        scheduler_name = self.config['trainer']['loss']['name']
+        if scheduler_name == 'dac':
             return optim.lr_scheduler.MultiStepLR(optimizer,
                                                   milestones=[60, 80, 120],
                                                   gamma=0.5)

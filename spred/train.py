@@ -18,6 +18,7 @@ class Trainer(ABC):
         self.decoder = decoder
         self.scheduler = scheduler
         self.visualizer = visualizer
+        self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
     @abstractmethod
     def _epoch_step(self, model):
@@ -26,7 +27,7 @@ class Trainer(ABC):
     def __call__(self, model):
         print("Training with config:")
         print(self.config)
-        model = cudaify(model)
+        model = model.to(self.device)
         epoch_results = []
         for e in range(1, self.n_epochs+1):
             self.criterion.notify(e)
@@ -38,8 +39,6 @@ class Trainer(ABC):
             print("epoch {}:".format(e))
             print("  training loss: ".format(e) + str(batch_loss))
             print(str(eval_result))
-            result = ExperimentResult(self.config, epoch_results)
-            # result.show_training_dashboard()
         return model, ExperimentResult(self.config, epoch_results)
 
     def validate_and_analyze(self, model, epoch):
@@ -55,21 +54,25 @@ class Trainer(ABC):
 class SingleTrainer(Trainer):
 
     def _epoch_step(self, model):
+        model.train()
         running_loss = 0.
         denom = 0
-        for images, labels in tqdm(self.train_loader, total=len(self.train_loader)):
-            self.optimizer.zero_grad()
-            output, conf = model(cudaify(images))
+        for batch in tqdm(self.train_loader, total=len(self.train_loader)):
+            batch = {k: v.to(self.device) for k, v in batch.items()}
+            output, conf = model(batch) # TODO: update FeedForward models with this API
             loss = self.criterion(output, conf, cudaify(labels))
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1)
+            # torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1)
             self.optimizer.step()
+            self.scheduler.step() # TODO: update other tasks with this
+            self.optimizer.zero_grad()
             running_loss += loss.item()
             denom += 1
         return running_loss / denom
 
 
 class PairwiseTrainer(Trainer):
+    """ TODO: outdated; FIX! """
 
     def _epoch_step(self, model):
         running_loss = 0.

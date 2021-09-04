@@ -1,0 +1,22 @@
+[
+  {
+    "task": {
+      "name": "cola"
+    },
+    "network": {
+      "architecture": "pretrained",
+      "confidence": "max_prob"
+    },
+    "trainer": {
+      "optimizer": {
+        "name": "adamw",
+        "lr": 5e-5
+      },
+      "bsz": 64,
+      "n_epochs": 15,
+      "loss": {
+        "name": "crossentropy"
+      }
+    }
+  }
+]
