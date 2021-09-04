@@ -24,7 +24,7 @@ class Decoder(ABC):
         self.running_loss_total = 0.0
         self.running_loss_denom = 0
         for batch in tqdm(data, total=len(data)):
-            batch = {k: v.to(device) for k, v in batch.items()}
+            batch = {k: v.to(self.device) for k, v in batch.items()}
             with torch.no_grad():
                 outputs, conf = net(batch)
             if loss_f is not None:
