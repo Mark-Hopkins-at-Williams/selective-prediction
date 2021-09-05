@@ -5,7 +5,7 @@
     },
     "network": {
       "architecture": "pretrained",
-      "base_model": "roberta-base",
+      "base_model": "bert-base-cased",
       "confidence": "max_prob"
     },
     "trainer": {
