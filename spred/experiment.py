@@ -3,6 +3,7 @@ from spred.tasks.mnist.task import MnistTaskFactory
 from spred.tasks.normals.task import NormalsTaskFactory
 from spred.tasks.glue.task import ColaTaskFactory
 from spred.tasks.sst2.task import Sst2TaskFactory
+from spred.tasks.rte.task import RteTaskFactory
 from spred.analytics import ResultDatabase
 
 task_factories = {'mnist': MnistTaskFactory,
