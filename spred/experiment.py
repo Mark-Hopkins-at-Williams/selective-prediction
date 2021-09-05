@@ -17,6 +17,12 @@ class Experiment:
         self.config = config
         self.task_factory = task_factories[config['task']['name']](config)
 
+    def n_trials(self):
+        if 'n_trials' in self.config:
+            return self.config['n_trials']
+        else:
+            return 1
+
     def run(self):
         trainer, model = self.task_factory.trainer_factory()
         _, result = trainer(model)
@@ -39,6 +45,7 @@ class ExperimentSequence:
     def run(self):
         results = []
         for experiment in self.experiments:
-            result = experiment.run()
-            results.append(result)
+            for _ in range(experiment.n_trials()):
+                result = experiment.run()
+                results.append(result)
         return ResultDatabase(results)

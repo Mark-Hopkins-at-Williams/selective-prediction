@@ -2,7 +2,7 @@
   {
     "task": {
       "name": "normals",
-      "noise_dim": 20,
+      "noise_dim": 50,
       "n_train_batches": 200,
       "n_validation_batches": 100
     },
@@ -17,10 +17,11 @@
         "momentum": 0.9
       },
       "bsz": 64,
-      "n_epochs": 15,
+      "n_epochs": 25,
       "loss": {
         "name": "crossentropy"
       }
-    }
+    },
+    "n_trials": 1
   }
 ]

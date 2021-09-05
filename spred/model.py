@@ -1,72 +1,12 @@
-import torch
 from torch import nn
-from torch.nn import functional
 from spred.util import cudaify
-from spred.loss import softmax, gold_values
+from spred.confidence import lookup_confidence_extractor
 from transformers import AutoModelForSequenceClassification
-
-
-def inv_abstain_prob(_, output):
-    probs = functional.softmax(output.clamp(min=-25, max=25), dim=-1)
-    return 1.0 - probs[:, -1]
-
-
-def max_nonabstain_prob(_, output):
-    probs = functional.softmax(output.clamp(min=-25, max=25), dim=-1)
-    return probs[:, :-1].max(dim=1).values
-
-
-def max_prob(_, output):
-    probs = functional.softmax(output.clamp(min=-25, max=25), dim=-1)
-    return probs.max(dim=1).values
-
-
-def abstention(_, output):
-    return output[:, -1]
-
-
-def random_confidence(_, output):
-    return torch.randn(output.shape[0])
-
-
-def lookup_confidence_extractor(name, model):
-    confidence_extractor_lookup = {'inv_abs': inv_abstain_prob,
-                                   'max_non_abs': max_nonabstain_prob,
-                                   'abs': abstention,
-                                   'max_prob': max_prob,
-                                   'random': random_confidence}
-    if name in confidence_extractor_lookup:
-        return confidence_extractor_lookup[name]
-    elif name == 'mc_dropout':
-        return MCDropoutConfidence(model)
-    else:
-        raise Exception('Confidence extractor not recognized: {}'.format(name))
-
-
-class MCDropoutConfidence:
-    def __init__(self, model, n_forward_passes=30):
-        self.model = model
-        self.n_forward_passes = n_forward_passes
-
-    def __call__(self, input, output):
-        self.model.train()
-        preds = torch.max(output, dim=1).indices
-        pred_probs = []
-        for _ in range(self.n_forward_passes):
-            dropout_output, _ = self.model(input, compute_conf=False)
-            dropout_output = softmax(dropout_output)
-            pred_probs.append(gold_values(dropout_output, preds))
-        pred_probs = torch.stack(pred_probs)
-        confs = torch.mean(pred_probs, dim=0)
-        return confs
 
 
 class Feedforward(nn.Module):
 
-    def __init__(self,
-                 input_size=784,
-                 hidden_sizes=(128, 64),
-                 output_size=10,
+    def __init__(self, input_size, hidden_sizes, output_size,
                  confidence_extractor='max_prob'):
         super().__init__()
         self.input_size = input_size
@@ -97,9 +37,8 @@ class Feedforward(nn.Module):
         return nextout, confidences
 
     def forward(self, batch, compute_conf=True):
-        input_vecs = batch['input_ids']
-        nextout = self.initial_layers(input_vecs)
-        result, confidence = self.final_layers(nextout, input_vecs, compute_conf)
+        nextout = self.initial_layers(batch['input_ids'])
+        result, confidence = self.final_layers(nextout, batch, compute_conf)
         return result, confidence
 
 
@@ -109,13 +48,10 @@ class InterfaceAFeedforward(Feedforward):
 
 class InterfaceBFeedforward(Feedforward):
  
-    def __init__(self, 
-                 input_size=784,
-                 hidden_sizes=(128, 64),
-                 output_size=10,
+    def __init__(self, input_size, hidden_sizes, output_size,
                  confidence_extractor='inv_abs'):
         super().__init__(input_size, hidden_sizes, output_size, confidence_extractor)
-        self.final = cudaify(nn.Linear(hidden_sizes[1], output_size + 1))
+        self.final = cudaify(nn.Linear(hidden_sizes[-1], output_size + 1))
 
 
 class InterfaceCFeedforward(Feedforward):
@@ -135,7 +71,7 @@ class InterfaceCFeedforward(Feedforward):
 
 class PretrainedTransformer(nn.Module):
 
-    def __init__(self, base_model="roberta", confidence_extractor='max_prob'):
+    def __init__(self, base_model, confidence_extractor='max_prob'):
         super().__init__()
         self.model = AutoModelForSequenceClassification.from_pretrained(base_model, num_labels=2)
         self.confidence_extractor = lookup_confidence_extractor(confidence_extractor, self)
@@ -143,7 +79,7 @@ class PretrainedTransformer(nn.Module):
     def forward(self, batch, compute_conf=True):
         outputs = self.model(**batch).logits
         if compute_conf:
-            confidence = self.confidence_extractor(batch['input_ids'], outputs)  # TODO: should we clone and detach?
+            confidence = self.confidence_extractor(batch, outputs)  # TODO: should we clone and detach?
         else:
             confidence = None
         return outputs, confidence

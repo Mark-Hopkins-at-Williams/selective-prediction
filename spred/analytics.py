@@ -1,3 +1,4 @@
+import sys
 from sklearn import metrics
 import numpy as np
 from functools import reduce
@@ -322,3 +323,10 @@ class ResultDatabase:
         experiment_results = [ExperimentResult.from_dict(d)
                               for d in experiment_results]
         return cls(experiment_results)
+
+
+if __name__ == '__main__':
+    result_file = sys.argv[1]
+    result_db = ResultDatabase.load(result_file)
+    #averaged_results = ExperimentResult.average_list_of_results(result_db.results)
+    result_db.results[0].show_training_dashboard()
