@@ -61,6 +61,7 @@ class TaskFactory(ABC):
             )
         else:
             return model_constructor(
+                base_model=self.config['network']['base_model'],
                 confidence_extractor=self.config['network']['confidence']
             )
 
@@ -103,6 +104,7 @@ class TaskFactory(ABC):
         try:
             scheduler_name = self.config['trainer']['scheduler']['name']
         except KeyError:
+            print("*** WARNING: NO SCHEDULER PROVIDED ***")
             scheduler_name = None
         if scheduler_name == 'dac':
             return optim.lr_scheduler.MultiStepLR(optimizer,

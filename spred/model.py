@@ -135,9 +135,9 @@ class InterfaceCFeedforward(Feedforward):
 
 class PretrainedTransformer(nn.Module):
 
-    def __init__(self, confidence_extractor='max_prob'):
+    def __init__(self, base_model="roberta", confidence_extractor='max_prob'):
         super().__init__()
-        self.model = AutoModelForSequenceClassification.from_pretrained("bert-base-cased", num_labels=2)
+        self.model = AutoModelForSequenceClassification.from_pretrained(base_model, num_labels=2)
         self.confidence_extractor = lookup_confidence_extractor(confidence_extractor, self)
 
     def forward(self, batch, compute_conf=True):

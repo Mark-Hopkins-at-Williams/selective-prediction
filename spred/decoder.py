@@ -3,6 +3,7 @@ from torch.nn import functional
 from spred.util import cudaify
 from tqdm import tqdm
 from abc import ABC, abstractmethod
+from datasets import load_metric
 
 
 class Decoder(ABC):
@@ -23,16 +24,21 @@ class Decoder(ABC):
         net.eval()
         self.running_loss_total = 0.0
         self.running_loss_denom = 0
+        metric = load_metric("accuracy")
         for batch in tqdm(data, total=len(data)):
             batch = {k: v.to(self.device) for k, v in batch.items()}
             with torch.no_grad():
                 outputs, conf = net(batch)
+            logits = outputs.logits
+            predictions = torch.argmax(logits, dim=-1)
+            metric.add_batch(predictions=predictions, references=batch["labels"])
             if loss_f is not None:
                 loss = loss_f(outputs, conf, batch['labels'])
                 self.running_loss_total += loss.item()
-                self.running_loss_denom += 1  # TODO: why 1 and not len(images)?
+                self.running_loss_denom += len(batch)
             for pred in self.make_predictions(outputs, batch['labels'], conf):
                 yield pred
+        metric.compute()
 
 
 class InterfaceADecoder(Decoder):

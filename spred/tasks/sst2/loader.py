@@ -6,12 +6,12 @@ from torch.utils.data import DataLoader
 
 class Sst2Loader(Loader):
 
-    def __init__(self, bsz, split):
+    def __init__(self, bsz, split, tokenizer="roberta"):
         super().__init__()
         self.split = split
         self.bsz = bsz
         raw_datasets = datasets.load_dataset('glue', 'sst2')
-        self.tokenizer = AutoTokenizer.from_pretrained("bert-base-cased")
+        self.tokenizer = AutoTokenizer.from_pretrained(tokenizer)
         tokenized_datasets = raw_datasets.map(self.tokenize_function, batched=True)
         tokenized_datasets = tokenized_datasets.remove_columns(["sentence", "idx"])
         tokenized_datasets = tokenized_datasets.rename_column("label", "labels")
