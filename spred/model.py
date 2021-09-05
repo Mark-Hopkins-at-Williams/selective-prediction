@@ -7,7 +7,7 @@ from transformers import AutoModelForSequenceClassification
 class Feedforward(nn.Module):
 
     def __init__(self, input_size, hidden_sizes, output_size,
-                 confidence_extractor='max_prob'):
+                 loss_f, confidence_extractor='max_prob'):
         super().__init__()
         self.input_size = input_size
         self.output_size = output_size
@@ -19,6 +19,7 @@ class Feedforward(nn.Module):
             self.linears.append(cudaify(nn.Linear(hidden_sizes[i], hidden_sizes[i+1])))
         self.final = cudaify(nn.Linear(hidden_sizes[-1], output_size))
         self.relu = nn.ReLU()
+        self.loss_f = loss_f
 
     def initial_layers(self, input_vec):
         nextout = cudaify(input_vec)
@@ -39,7 +40,8 @@ class Feedforward(nn.Module):
     def forward(self, batch, compute_conf=True):
         nextout = self.initial_layers(batch['input_ids'])
         result, confidence = self.final_layers(nextout, batch, compute_conf)
-        return result, confidence
+        loss = self.loss_f(result, confidence, batch['labels'])
+        return result, loss, confidence
 
 
 class InterfaceAFeedforward(Feedforward):
@@ -77,9 +79,9 @@ class PretrainedTransformer(nn.Module):
         self.confidence_extractor = lookup_confidence_extractor(confidence_extractor, self)
 
     def forward(self, batch, compute_conf=True):
-        outputs = self.model(**batch).logits
+        outputs = self.model(**batch)
         if compute_conf:
-            confidence = self.confidence_extractor(batch, outputs)  # TODO: should we clone and detach?
+            confidence = self.confidence_extractor(batch, outputs.logits)  # TODO: should we clone and detach?
         else:
             confidence = None
-        return outputs, confidence
+        return outputs.logits, outputs.loss, confidence

@@ -27,11 +27,9 @@ class Decoder(ABC):
             batch = {k: v.to(self.device) for k, v in batch.items()}
             net.eval()
             with torch.no_grad():
-                outputs, conf = net(batch, compute_conf=True)
-            if loss_f is not None:
-                loss = loss_f(outputs, conf, batch['labels'])
-                self.running_loss_total += loss.item()
-                self.running_loss_denom += len(batch)
+                outputs, loss, conf = net(batch, compute_conf=True)
+            self.running_loss_total += loss.item()
+            self.running_loss_denom += len(batch)
             for pred in self.make_predictions(outputs, batch['labels'], conf):
                 yield pred
 

@@ -57,7 +57,8 @@ class TaskFactory(ABC):
                 input_size=self.input_size(),  # FIX THIS API!
                 hidden_sizes=(128, 64),
                 output_size=self.output_size(),
-                confidence_extractor=self.config['network']['confidence']
+                confidence_extractor=self.config['network']['confidence'],
+                loss_f = self.loss_factory()
             )
         else:
             return model_constructor(

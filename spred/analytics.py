@@ -357,7 +357,7 @@ def plot_metric(exp_results, metric_name):
 def main(result_files):
     result_dbs = [(file, ResultDatabase.load(file)) for file in result_files]
     avg_results = [(file, result_db.averaged()[0]) for (file, result_db) in result_dbs]
-    plot_metric(avg_results, 'aupr')
+    plot_metric(avg_results, 'precision')
 
 
 if __name__ == '__main__':

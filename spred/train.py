@@ -56,8 +56,8 @@ class SingleTrainer(Trainer):
         for batch in tqdm(self.train_loader, total=len(self.train_loader)):
             batch = {k: v.to(self.device) for k, v in batch.items()}
             model.train()
-            output, conf = model(batch, compute_conf=False)
-            loss = self.criterion(output, conf, batch['labels'])
+            output, loss, conf = model(batch, compute_conf=False)
+            # loss = self.criterion(output, conf, batch['labels'])
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1)
             self.optimizer.step()

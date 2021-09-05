@@ -50,7 +50,7 @@ class MCDropoutConfidence:
         pred_probs = []
         for _ in range(self.n_forward_passes):
             self.model.train()
-            dropout_output, _ = self.model(input, compute_conf=False)
+            dropout_output, _, _ = self.model(input, compute_conf=False)
             dropout_output = softmax(dropout_output)
             pred_probs.append(gold_values(dropout_output, preds))
         pred_probs = torch.stack(pred_probs)

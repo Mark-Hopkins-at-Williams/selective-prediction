@@ -2,7 +2,7 @@ import os
 import subprocess
 import sys
 from spred.experiment import ExperimentSequence
-from spred.analytics import ResultDatabase
+from spred.analytics import ResultDatabase, show_training_dashboard
 
 MODELS_BASE_DIR = os.getenv('SPRED_MODELS').strip()
 if not os.path.isdir(MODELS_BASE_DIR):
@@ -26,4 +26,4 @@ if __name__ == "__main__":
     result_db = exp_seq.run()
     result_db.save(output_path)
     reloaded = ResultDatabase.load(output_path)
-    reloaded.results[0].show_training_dashboard()
+    show_training_dashboard(reloaded.results[0])
