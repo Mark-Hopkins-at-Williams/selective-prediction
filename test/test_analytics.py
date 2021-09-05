@@ -1,8 +1,11 @@
 import unittest
 import numpy as np
+import json
 from spred.analytics import Evaluator, EvaluationResult, EpochResult
 from spred.analytics import ExperimentResult
 from spred.analytics import kendall_tau_distance, harsh_sort
+from spred.analytics import relativized_kendall_tau_distance
+
 
 
 def compare(a1, a2, num_decimal_places=4):
@@ -43,7 +46,7 @@ class TestEvaluator(unittest.TestCase):
         assert kendall_tau_distance([2, 2, 2, 2, 2], [0, 1, 0, 1, 1]) == 6
 
     def test_relativized_kendall_tau_distance(self):
-        assert kendall_tau_distance([1.4, 1.2, 1.3, 1.1], [0, 0, 1, 1]) == 0.75
+        assert relativized_kendall_tau_distance([1.4, 1.2, 1.3, 1.1], [0, 0, 1, 1]) == 0.75
 
     def test_pr_curve(self):
         evaluator = Evaluator(self.preds1)
@@ -70,56 +73,70 @@ class TestEvaluator(unittest.TestCase):
         assert compare(expected_coverage, coverage)
         assert approx(capacity, 0.94)
 
-    """
     def test_evaluation_result_serialization(self):
         evaluator = Evaluator(self.preds1)
         result = evaluator.get_result().as_dict()
         result = {k: round(result[k], 4) if result[k] is not None else None
                   for k in result}
-        expected = {'train_loss': None, 'avg_err_conf': 0.3, 'avg_crr_conf': 0.6333,
+        expected = {'train_loss': None,
+                    'avg_err_conf': 0.3, 'avg_crr_conf': 0.6333,
                     'auroc': 0.8333, 'aupr': 0.9028,
-                    'capacity': 0.94, 'precision': 0.6, 'coverage': 1.0}
+                    'capacity': 0.94, 'kendall_tau': 0.1667,
+                    'precision': 0.6, 'coverage': 1.0}
         assert result == expected
-        result2 = EvaluationResult.from_dict(expected)
+        result2 = EvaluationResult(expected)
         assert result2.as_dict() == expected
+
+    def test_evaluation_result_averaging(self):
+        result1 = EvaluationResult({'train_loss': 1, 'avg_err_conf': 2,
+                                    'avg_crr_conf': 3, 'auroc': 4})
+        result2 = EvaluationResult({'train_loss': 1, 'avg_err_conf': 2,
+                                    'avg_crr_conf': 3, 'auroc': 8})
+        avg = EvaluationResult.averaged([result1, result2])
+        expected = EvaluationResult({'train_loss': 1.0, 'avg_err_conf': 2.0,
+                                    'avg_crr_conf': 3.0, 'auroc': 6.0})
+        assert avg == expected
 
     def test_epoch_result_serialization(self):
         validation_d = {'train_loss': 1.2, 'avg_err_conf': 0.3, 'avg_crr_conf': 0.6333,
-                        'auroc': 0.8333, 'aupr': 0.9028,
+                        'auroc': 0.8333, 'aupr': 0.9028, 'kendall_tau': 0.5,
                         'capacity': 0.94, 'precision': 0.6, 'coverage': 1.0}
-        validation = EvaluationResult.from_dict(validation_d)
-        result = EpochResult(3, 0.77, validation)
-        expected = {'epoch': 3,
-                    'train_loss': 0.77,
-                    'validation_result': validation_d}
-        assert result.as_dict() == expected
-        result2 = EpochResult.from_dict(expected)
-        assert result2.as_dict() == expected
+        validation = EvaluationResult(validation_d)
+        original = EpochResult(3, 0.77, validation)
+        d = {'epoch': 3, 'train_loss': 0.77, 'validation_result': validation}
+        result = EpochResult.from_dict(d)
+        assert result == original
 
-    def test_experiment_result_serialization(self):
-        results = []
-        validation_d1 = {'train_loss': 1.2, 'avg_err_conf': 0.3, 'avg_crr_conf': 0.6333,
-                         'auroc': 0.8333, 'aupr': 0.9028,
-                         'capacity': 0.94, 'precision': 0.6, 'coverage': 1.0}
-        validation = EvaluationResult.from_dict(validation_d1)
-        results.append(EpochResult(1, 0.65, validation))
-        validation_d2 = {'train_loss': 1.2, 'avg_err_conf': 0.3, 'avg_crr_conf': 0.6333,
-                         'auroc': 0.86, 'aupr': 0.92,
-                         'capacity': 0.94, 'precision': 0.6, 'coverage': 1.0}
-        validation = EvaluationResult.from_dict(validation_d2)
-        results.append(EpochResult(2, 0.77, validation))
-        experiment_result = ExperimentResult({'key': 'just an example'}, results)
-        expected = {'config': {'key': 'just an example'},
-                    'results': [{'epoch': 1,
-                                 'train_loss': 0.65,
-                                 'validation_result': validation_d1},
-                                {'epoch': 2,
-                                 'train_loss': 0.77,
-                                 'validation_result': validation_d2}]}
-        assert experiment_result.as_dict() == expected
-        result2 = ExperimentResult.from_dict(expected)
-        assert result2.as_dict() == expected
-    """
+    def test_epoch_result_averaging(self):
+        eval_result1 = EvaluationResult({'train_loss': 1, 'avg_err_conf': 2,
+                                         'avg_crr_conf': 3, 'auroc': 4})
+        eval_result2 = EvaluationResult({'train_loss': 5, 'avg_err_conf': 6,
+                                         'avg_crr_conf': 7, 'auroc': 8})
+        epoch_results = [EpochResult(3, 1, eval_result1),
+                         EpochResult(3, 3, eval_result2)]
+        avg = EpochResult.averaged(epoch_results)
+        avg_eval_result = EvaluationResult({'train_loss': 3.0, 'avg_err_conf': 4.0,
+                                            'avg_crr_conf': 5.0, 'auroc': 6.0})
+        expected = EpochResult(3.0, 2.0, avg_eval_result)
+        assert avg == expected
+
+    def test_experiment_result_averaging(self):
+
+        def example_result(k):
+            epoch_results = []
+            validation_d1 = {'dev_loss': k + 1.2, 'kendall_tau': k + 0.4}
+            validation = EvaluationResult(validation_d1)
+            epoch_results.append(EpochResult(1, k + 0.6, validation))
+            validation_d2 = {'dev_loss': k + 0.6, 'kendall_tau': k + 0.2}
+            validation = EvaluationResult(validation_d2)
+            epoch_results.append(EpochResult(2, k + 0.7, validation))
+            return ExperimentResult({'key': 'just an example'}, epoch_results)
+
+        results = [example_result(0.4), example_result(0.6), example_result(0.8)]
+        print(results)
+        print(ExperimentResult.group_by_config(results))
+        print(ExperimentResult.averaged(results))
+
 
 if __name__ == "__main__":
     unittest.main()

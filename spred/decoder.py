@@ -21,13 +21,13 @@ class Decoder(ABC):
         ...
 
     def __call__(self, net, data, loss_f=None):
-        net.eval()
         self.running_loss_total = 0.0
         self.running_loss_denom = 0
         for batch in tqdm(data, total=len(data)):
             batch = {k: v.to(self.device) for k, v in batch.items()}
+            net.eval()
             with torch.no_grad():
-                outputs, conf = net(batch)
+                outputs, conf = net(batch, compute_conf=True)
             if loss_f is not None:
                 loss = loss_f(outputs, conf, batch['labels'])
                 self.running_loss_total += loss.item()

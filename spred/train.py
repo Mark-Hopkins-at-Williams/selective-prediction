@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from spred.analytics import Evaluator, ExperimentResult, EpochResult
-from spred.util import cudaify
 import torch
 from tqdm import tqdm
 
@@ -32,8 +31,6 @@ class Trainer(ABC):
         for e in range(1, self.n_epochs+1):
             self.criterion.notify(e)
             batch_loss = self._epoch_step(model)
-            if self.scheduler is not None:
-                self.scheduler.step()
             eval_result = self.validate_and_analyze(model, e)
             epoch_results.append(EpochResult(e, batch_loss, eval_result))
             print("epoch {}:".format(e))
@@ -54,26 +51,27 @@ class Trainer(ABC):
 class SingleTrainer(Trainer):
 
     def _epoch_step(self, model):
-        model.train()
         running_loss = 0.
         denom = 0
         for batch in tqdm(self.train_loader, total=len(self.train_loader)):
             batch = {k: v.to(self.device) for k, v in batch.items()}
-            output, conf = model(batch)
+            model.train()
+            output, conf = model(batch, compute_conf=False)
             loss = self.criterion(output, conf, batch['labels'])
             loss.backward()
-            # torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1)
             self.optimizer.step()
             if self.scheduler is not None:
                 self.scheduler.step()
             self.optimizer.zero_grad()
             running_loss += loss.item()
-            denom += 1
+            denom += len(batch)
         return running_loss / denom
 
 
 class PairwiseTrainer(Trainer):
     """ TODO: outdated; FIX! """
+    from spred.util import cudaify
 
     def _epoch_step(self, model):
         running_loss = 0.

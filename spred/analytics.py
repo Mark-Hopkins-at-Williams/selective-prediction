@@ -3,10 +3,12 @@ from sklearn import metrics
 import numpy as np
 from functools import reduce
 import matplotlib.pyplot as plt
-from matplotlib import rcParams
+from matplotlib import rcParams, cm
 import json
+from statistics import mean
 rcParams['font.family'] = 'sans-serif'
 rcParams['font.sans-serif'] = ['Tahoma', 'DejaVu Sans', 'Ubuntu Condensed']
+from collections import defaultdict
 
 
 def harsh_sort(confidences, predictions):
@@ -49,8 +51,8 @@ kendalltau = relativized_kendall_tau_distance
 
 class Evaluator:
 
-    def __init__(self, predictions, loss=None):
-        self._loss = loss
+    def __init__(self, predictions, validation_loss=None):
+        self.validation_loss = validation_loss
         self.y_true = [int(pred['pred'] == pred['gold']) for pred in predictions]
         self.y_scores = [pred['confidence'] for pred in predictions]
         self.avg_err_conf = 0
@@ -135,34 +137,12 @@ class Evaluator:
         capacity = 1 - metrics.auc(coverage, unconditional_err)
         return coverage, unconditional_err, capacity
 
-    def plot_roc(self):
-        fpr, tpr, auc = self.roc_curve()
-        plt.title('Receiver Operating Characteristic')
-        plt.plot(fpr, tpr, 'b', label='AUROC = %0.2f' % auc)
-        plt.legend(loc='lower right')
-        axes = plt.gca()
-        axes.set_ylim([-0.05, 1.05])
-        plt.ylabel('True Positive Rate')
-        plt.xlabel('False Positive Rate')
-        plt.show()
-
-    def plot_pr(self):
-        precision, recall, auc = self.pr_curve()
-        plt.title('Precision-Recall')
-        plt.plot(recall, precision, 'b', label='AUPR = %0.2f' % auc)
-        plt.legend(loc='lower right')
-        axes = plt.gca()
-        axes.set_ylim([-0.05, 1.05])
-        plt.ylabel('Precision')
-        plt.xlabel('Recall')
-        plt.show()
-
     def get_result(self):
         _, _, auroc = self.roc_curve()
         _, _, aupr = self.pr_curve()
         _, _, capacity = self.risk_coverage_curve()
-        return EvaluationResult.from_dict(
-            {'train_loss': self._loss,
+        return EvaluationResult(
+            {'validation_loss': self.validation_loss,
              'kendall_tau': self.ktau,
              'avg_err_conf': (self.avg_err_conf / self.n_error
                               if self.n_error > 0 else 0),
@@ -179,39 +159,47 @@ class Evaluator:
 
 
 class EvaluationResult:
-    def __init__(self, train_loss, auroc, aupr, capacity, precision, coverage,
-                 avg_err_conf, avg_crr_conf, kendall_tau):
-        self.train_loss = train_loss
-        self.auroc = auroc
-        self.aupr = aupr
-        self.capacity = capacity
-        self.precision = precision
-        self.coverage = coverage
-        self.avg_err_conf = avg_err_conf
-        self.avg_crr_conf = avg_crr_conf
-        self.kendall_tau = kendall_tau
+    def __init__(self, result_dict):
+        self.result_dict = result_dict
 
     def loss(self):
-        return self.train_loss
+        if 'train_loss' in self.result_dict:
+            return self.result_dict['train_loss']
+        else:
+            return None
 
     def __str__(self):
-        d = self.as_dict()
-        return '  ' + '\n  '.join(['{}: {}'.format(key, d[key]) for key in d])
+        return json.dumps(self.as_dict(), indent=4, sort_keys=True)
+
+    __repr__ = __str__
+
+    def __getitem__(self, key):
+        return self.result_dict[key]
 
     def as_dict(self):
-        return {'train_loss': self.train_loss,
-                'kendall_tau': self.kendall_tau,
-                'avg_err_conf': self.avg_err_conf,
-                'avg_crr_conf': self.avg_crr_conf,
-                'auroc': self.auroc,
-                'aupr': self.aupr,
-                'capacity': self.capacity,
-                'precision': self.precision,
-                'coverage': self.coverage}
+        return self.result_dict
 
-    @classmethod
-    def from_dict(cls, d):
-        return cls(**d)
+    def __eq__(self, other):
+        return self.result_dict == other.result_dict
+
+    @staticmethod
+    def averaged(list_of_results):
+        def sum_result_dicts(this, other):
+            def process_key(key):
+                return this[key] + other[key]
+            assert (this.keys() == other.keys())
+            return {key: process_key(key) for key in this.keys()}
+
+        def normalize_result_dict(d, divisor):
+            def process_key(key):
+                return d[key] / divisor
+            return {key: process_key(key) for key in d.keys()}
+
+        list_of_result_dicts = [x.as_dict() for x in list_of_results]
+        result_sum = reduce(sum_result_dicts, list_of_result_dicts)
+        avg_result = normalize_result_dict(result_sum,
+                                           len(list_of_result_dicts))
+        return EvaluationResult(avg_result)
 
 
 class EpochResult:
@@ -231,8 +219,33 @@ class EpochResult:
 
     @classmethod
     def from_dict(cls, d):
-        validation_result = EvaluationResult.from_dict(d['validation_result'])
+        try:
+            valid_d = d['validation_result'].as_dict()
+        except AttributeError:
+            valid_d = d['validation_result'] # TODO: CLEAN THIS HACK UP
+        validation_result = EvaluationResult(valid_d)
         return cls(d['epoch'], d['train_loss'], validation_result)
+
+    def __eq__(self, other):
+        return (self.epoch == other.epoch and
+                self.train_loss == other.train_loss and
+                self.validation_result == other.validation_result)
+
+    def __str__(self):
+        return json.dumps(self.as_dict(), indent=4, sort_keys=True)
+
+    __repr__ = __str__
+
+    @staticmethod
+    def averaged(list_of_results):
+        assert len(list_of_results) > 0
+        validation_results = [x.validation_result for x in list_of_results]
+        avg_validation_results = EvaluationResult.averaged(validation_results)
+        avg_epoch = mean([x.epoch for x in list_of_results])
+        avg_train_loss = mean([x.get_train_loss() for x in list_of_results])
+        d = {'epoch': avg_epoch, 'train_loss': avg_train_loss,
+             'validation_result': avg_validation_results}
+        return EpochResult.from_dict(d)
 
 
 class ExperimentResult:
@@ -240,6 +253,9 @@ class ExperimentResult:
     def __init__(self, config, epoch_results):
         self.config = config
         self.epoch_results = epoch_results
+
+    def canonical_config(self):
+        return str(tuple(sorted(self.config.items()))) # TODO: FIX THIS HACK
 
     def as_dict(self):
         results_json = [result.as_dict() for result in self.epoch_results]
@@ -251,60 +267,17 @@ class ExperimentResult:
         epoch_results = [EpochResult.from_dict(result) for result in d['results']]
         return cls(d['config'], epoch_results)
 
-    def show_training_dashboard(self):
-        fig, (ax1, ax2) = plt.subplots(2, sharex='all')
-        fig.suptitle('Training Dashboard', fontsize='18')
-        indexed_results = [(i+1, r) for (i, r) in enumerate(self.epoch_results)]
-        x_axis = [i for (i, _) in indexed_results]
-        train_losses = [r.get_train_loss() for (_, r) in indexed_results]
-        valid_losses = [r.validation_result.loss() for (_, r) in indexed_results]
-        valid_aurocs = [r.validation_result.auroc for (_, r) in indexed_results]
-        valid_ktaus = [r.validation_result.kendall_tau for (_, r) in indexed_results]
-        ax1.plot(x_axis, train_losses, 'b', label='train loss')
-        ax1.plot(x_axis, valid_losses, 'r', label='valid loss')
-        ax1.set(ylabel='loss')
-        ax2.plot(x_axis, valid_aurocs, 'g', label='valid auroc')
-        ax2.plot(x_axis, valid_ktaus, 'orange', label='valid ktau')
-        ax1.legend(loc='upper right')
-        ax2.legend(loc='lower right')
-        ax2.set(ylabel='metric')
-        plt.xlabel('epoch')
-        plt.show()
+    def __str__(self):
+        return json.dumps(self.as_dict(), indent=4, sort_keys=True)
+
+    __repr__ = __str__
 
     @staticmethod
-    def average_list_of_results(list_of_results):
-        def sum_result_dicts(this, other):
-            def elementwise_add(ls1, ls2):
-                assert (len(ls1) == len(ls2))
-                return [(ls1[i] + ls2[i]) for i in range(len(ls1))]
-
-            def process_key(key):
-                if key != 'prediction_by_class':
-                    return this[key] + other[key]
-                else:
-                    return {key: elementwise_add(this[key], other[key])
-                            for key in this.keys()}
-
-            assert (this.keys() == other.keys())
-            return {key: process_key(key) for key in this.keys()}
-
-        def normalize_result_dict(d, divisor):
-            def elementwise_div(ls):
-                return [element / divisor for element in ls]
-
-            def process_key(key):
-                if key != 'prediction_by_class':
-                    return d[key] / divisor
-                else:
-                    return {key: elementwise_div(d[key])
-                            for key in d.keys()}
-
-            return {key: process_key(key) for key in d.keys()}
-
-        result_sum = reduce(sum_result_dicts, list_of_results)
-        avg_result = normalize_result_dict(result_sum,
-                                           len(list_of_results))
-        return avg_result
+    def group_by_config(list_of_results):
+        groups = defaultdict(list)
+        for exp_result in list_of_results:
+            groups[exp_result.canonical_config()].append(exp_result)
+        return dict(groups)
 
 
 class ResultDatabase:
@@ -324,9 +297,73 @@ class ResultDatabase:
                               for d in experiment_results]
         return cls(experiment_results)
 
+    def averaged(self):
+        list_of_results = self.results
+        assert len(list_of_results) > 0
+        config_groups = ExperimentResult.group_by_config(list_of_results)
+        final_result = []
+        for (_, exp_results) in config_groups.items():
+            grouped_epoch_results = defaultdict(list)
+            for exp_result in exp_results:
+                for epoch_result in exp_result.epoch_results:
+                    grouped_epoch_results[epoch_result.epoch].append(epoch_result)
+            avg_epoch_results = []
+            for (epoch, epoch_results) in grouped_epoch_results.items():
+                avg_epoch_results.append((epoch, EpochResult.averaged(epoch_results)))
+            avg_epoch_results = [r for (_, r) in sorted(avg_epoch_results)]
+            avg_exp_result = ExperimentResult(exp_results[0].config,
+                                              avg_epoch_results)
+            final_result.append(avg_exp_result)
+        return final_result
+
+
+def show_training_dashboard(exp_result):
+    fig, (ax1, ax2) = plt.subplots(2, sharex='all')
+    fig.suptitle('Training Dashboard', fontsize='18')
+    indexed_results = [(i+1, r) for (i, r) in enumerate(exp_result.epoch_results)]
+    x_axis = [i for (i, _) in indexed_results]
+    train_losses = [r.get_train_loss() for (_, r) in indexed_results]
+    valid_losses = [r.validation_result.loss() for (_, r) in indexed_results]
+    valid_aurocs = [r.validation_result['auroc'] for (_, r) in indexed_results]
+    valid_ktaus = [r.validation_result['kendall_tau'] for (_, r) in indexed_results]
+    ax1.plot(x_axis, train_losses, 'b', label='train loss')
+    ax1.plot(x_axis, valid_losses, 'r', label='valid loss')
+    ax1.set(ylabel='loss')
+    ax2.plot(x_axis, valid_aurocs, 'g', label='valid auroc')
+    ax2.plot(x_axis, valid_ktaus, 'orange', label='valid ktau')
+    ax1.legend(loc='upper right')
+    ax2.legend(loc='lower right')
+    ax2.set(ylabel='metric')
+    plt.xlabel('epoch')
+    plt.show()
+
+
+def plot_metric(exp_results, metric_name):
+    colors = iter(['red', 'orange', 'yellow', 'green', 'blue']*20)
+    fig, ax = plt.subplots()
+    fig.suptitle('Training Dashboard', fontsize='18')
+    for name, exp_result in exp_results:
+        indexed_results = [(i+1, r) for (i, r) in enumerate(exp_result.epoch_results)]
+        x_axis = [i for (i, _) in indexed_results]
+        valid_ktaus = [r.validation_result[metric_name] for (_, r) in indexed_results]
+        color = next(colors)
+        ax.plot(x_axis, valid_ktaus, color, label=name)
+    ax.set(ylabel=metric_name)
+    ax.legend()
+    plt.xlabel('epoch')
+    plt.show()
+
+
+def main(result_files):
+    result_dbs = [(file, ResultDatabase.load(file)) for file in result_files]
+    avg_results = [(file, result_db.averaged()[0]) for (file, result_db) in result_dbs]
+    plot_metric(avg_results, 'aupr')
+
 
 if __name__ == '__main__':
-    result_file = sys.argv[1]
-    result_db = ResultDatabase.load(result_file)
-    #averaged_results = ExperimentResult.average_list_of_results(result_db.results)
-    result_db.results[0].show_training_dashboard()
+    i = 1
+    files = []
+    while i < len(sys.argv):
+        files.append(sys.argv[i])
+        i += 1
+    main(files)

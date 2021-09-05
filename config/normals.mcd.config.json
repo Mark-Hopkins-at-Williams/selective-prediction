@@ -17,10 +17,11 @@
         "momentum": 0.9
       },
       "bsz": 64,
-      "n_epochs": 40,
+      "n_epochs": 25,
       "loss": {
         "name": "crossentropy"
       }
-    }
+    },
+    "n_trials": 3
   }
 ]

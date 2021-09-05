@@ -46,10 +46,10 @@ class MCDropoutConfidence:
         self.n_forward_passes = n_forward_passes
 
     def __call__(self, input, output):
-        self.model.train()
         preds = torch.max(output, dim=1).indices
         pred_probs = []
         for _ in range(self.n_forward_passes):
+            self.model.train()
             dropout_output, _ = self.model(input, compute_conf=False)
             dropout_output = softmax(dropout_output)
             pred_probs.append(gold_values(dropout_output, preds))
