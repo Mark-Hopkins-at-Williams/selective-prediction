@@ -1,0 +1,23 @@
+[
+  {
+    "task": {
+      "name": "rte"
+    },
+    "network": {
+      "architecture": "pretrained",
+      "base_model": "roberta-base",
+      "confidence": "max_prob"
+    },
+    "trainer": {
+      "optimizer": {
+        "name": "adamw",
+        "lr": 5e-5
+      },
+      "scheduler": {
+        "name": "linear"
+      },
+      "bsz": 8,
+      "n_epochs": 15
+    }
+  }
+]

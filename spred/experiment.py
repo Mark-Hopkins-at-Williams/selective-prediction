@@ -8,7 +8,8 @@ from spred.analytics import ResultDatabase
 task_factories = {'mnist': MnistTaskFactory,
                   'normals': NormalsTaskFactory,
                   'cola': ColaTaskFactory,
-                  'sst2': Sst2TaskFactory}
+                  'sst2': Sst2TaskFactory,
+                  'rte': RteTaskFactory}
 
 
 class Experiment:
