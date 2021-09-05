@@ -17,7 +17,10 @@
         "name": "linear"
       },
       "bsz": 8,
-      "n_epochs": 15
+      "n_epochs": 15,
+      "loss": {
+        "name": "crossentropy"
+      }
     }
   }
 ]
