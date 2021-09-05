@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 
 class Sst2Loader(Loader):
 
-    def __init__(self, bsz, split, tokenizer="roberta"):
+    def __init__(self, bsz, split, tokenizer):
         super().__init__()
         self.split = split
         self.bsz = bsz
