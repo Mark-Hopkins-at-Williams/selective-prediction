@@ -2,9 +2,9 @@ import torch.optim as optim
 from transformers import AdamW
 from transformers import get_scheduler
 from spred.decoder import InterfaceADecoder, InterfaceBDecoder
-from spred.loss import CrossEntropyLoss, NLLLoss, AbstainingLoss
+from spred.loss import CrossEntropyLoss, AbstainingLoss
 from spred.loss import PairwiseConfidenceLoss, DACLoss
-from spred.loss import CrossEntropyLossWithErrorRegularization
+from spred.loss import LossWithErrorRegularization
 from spred.model import InterfaceAFeedforward, InterfaceBFeedforward
 from spred.model import PretrainedTransformer
 from spred.train import SingleTrainer, PairwiseTrainer
@@ -15,11 +15,10 @@ from abc import ABC, abstractmethod
 class TaskFactory(ABC):
     def __init__(self, config):
         self.criterion_lookup = {'crossentropy': CrossEntropyLoss,
-                                 'nll': NLLLoss,
                                  'conf1': AbstainingLoss,
                                  'pairwise': PairwiseConfidenceLoss,
                                  'dac': DACLoss,
-                                 'ce_w_er': CrossEntropyLossWithErrorRegularization}
+                                 'ce_w_er': LossWithErrorRegularization}
         self._decoder_lookup = {'simple': InterfaceADecoder,
                                 'abstaining': InterfaceBDecoder,
                                 'pretrained': InterfaceADecoder}

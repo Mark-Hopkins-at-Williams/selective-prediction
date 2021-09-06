@@ -323,7 +323,7 @@ def show_training_dashboard(exp_result):
     indexed_results = [(i+1, r) for (i, r) in enumerate(exp_result.epoch_results)]
     x_axis = [i for (i, _) in indexed_results]
     train_losses = [r.get_train_loss() for (_, r) in indexed_results]
-    valid_losses = [r.validation_result.loss() for (_, r) in indexed_results]
+    valid_losses = [r.validation_result['validation_loss'] for (_, r) in indexed_results]
     valid_aurocs = [r.validation_result['auroc'] for (_, r) in indexed_results]
     valid_ktaus = [r.validation_result['kendall_tau'] for (_, r) in indexed_results]
     ax1.plot(x_axis, train_losses, 'b', label='train loss')
@@ -357,7 +357,7 @@ def plot_metric(exp_results, metric_name):
 def main(result_files):
     result_dbs = [(file, ResultDatabase.load(file)) for file in result_files]
     avg_results = [(file, result_db.averaged()[0]) for (file, result_db) in result_dbs]
-    plot_metric(avg_results, 'precision')
+    plot_metric(avg_results, 'kendall_tau')
 
 
 if __name__ == '__main__':

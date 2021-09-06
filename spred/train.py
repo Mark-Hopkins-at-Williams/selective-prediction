@@ -56,8 +56,8 @@ class SingleTrainer(Trainer):
         for batch in tqdm(self.train_loader, total=len(self.train_loader)):
             batch = {k: v.to(self.device) for k, v in batch.items()}
             model.train()
-            output, loss, conf = model(batch, compute_conf=False)
-            # loss = self.criterion(output, conf, batch['labels'])
+            model_out = model(batch, compute_conf=False)
+            output, loss, conf = model_out['outputs'], model_out['loss'], model_out['confidences']
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1)
             self.optimizer.step()
@@ -65,13 +65,12 @@ class SingleTrainer(Trainer):
                 self.scheduler.step()
             self.optimizer.zero_grad()
             running_loss += loss.item()
-            denom += len(batch)
+            denom += 1
         return running_loss / denom
 
 
 class PairwiseTrainer(Trainer):
     """ TODO: outdated; FIX! """
-    from spred.util import cudaify
 
     def _epoch_step(self, model):
         running_loss = 0.

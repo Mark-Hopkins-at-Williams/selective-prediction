@@ -1,6 +1,5 @@
 import torch
 from torch.nn import functional
-from spred.util import cudaify
 from tqdm import tqdm
 from abc import ABC, abstractmethod
 from datasets import load_metric
@@ -27,9 +26,10 @@ class Decoder(ABC):
             batch = {k: v.to(self.device) for k, v in batch.items()}
             net.eval()
             with torch.no_grad():
-                outputs, loss, conf = net(batch, compute_conf=True)
+                model_out = net(batch, compute_conf=True)
+                outputs, loss, conf = model_out['outputs'], model_out['loss'], model_out['confidences']
             self.running_loss_total += loss.item()
-            self.running_loss_denom += len(batch)
+            self.running_loss_denom += 1
             for pred in self.make_predictions(outputs, batch['labels'], conf):
                 yield pred
 
