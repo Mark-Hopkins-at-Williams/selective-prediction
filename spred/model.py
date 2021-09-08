@@ -84,7 +84,8 @@ class PretrainedTransformer(nn.Module):
     def forward(self, batch, compute_conf=True):
         outputs = self.model(**batch)
         if compute_conf:
-            confidence = self.confidence_extractor(batch, outputs.logits)  # TODO: should we clone and detach?
+            confidence = self.confidence_extractor({'inputs': batch,
+                                                    'outputs': outputs.logits})  # TODO: should we clone and detach?
         else:
             confidence = None
         return {'outputs': outputs.logits, 'loss': outputs.loss,
