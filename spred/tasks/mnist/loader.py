@@ -50,7 +50,7 @@ class MnistLoader(Loader):
         for images, labels in self.loader:
             images = images.view(images.shape[0], -1)
             labels = self.confuser(labels)
-            yield images, labels
+            yield {'inputs': images, 'labels': labels}
 
     def __len__(self):
         return len(self.loader)

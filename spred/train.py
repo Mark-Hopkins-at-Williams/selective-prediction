@@ -56,7 +56,7 @@ class SingleTrainer(Trainer):
         for batch in tqdm(self.train_loader, total=len(self.train_loader)):
             batch = {k: v.to(self.device) for k, v in batch.items()}
             model.train()
-            model_out = model(batch, compute_conf=False)
+            model_out = model(batch, compute_conf=True) # TODO: make compute_conf configurable
             output, loss, conf = model_out['outputs'], model_out['loss'], model_out['confidences']
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1)

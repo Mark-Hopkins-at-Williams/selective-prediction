@@ -7,8 +7,8 @@
       "n_validation_batches": 100
     },
     "network": {
-      "architecture": "simple",
-      "confidence": "max_prob"
+      "architecture": "abstaining",
+      "confidence": "inv_abstain"
     },
     "trainer": {
       "optimizer": {
@@ -19,7 +19,8 @@
       "bsz": 64,
       "n_epochs": 70,
       "loss": {
-        "name": "crossentropy"
+        "name": "dac",
+        "warmup_epochs": 5
       }
     },
     "n_trials": 3

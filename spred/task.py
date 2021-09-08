@@ -2,9 +2,7 @@ import torch.optim as optim
 from transformers import AdamW
 from transformers import get_scheduler
 from spred.decoder import InterfaceADecoder, InterfaceBDecoder
-from spred.loss import CrossEntropyLoss, AbstainingLoss
-from spred.loss import PairwiseConfidenceLoss, DACLoss
-from spred.loss import LossWithErrorRegularization
+from spred.loss import init_loss_fn
 from spred.model import InterfaceAFeedforward, InterfaceBFeedforward
 from spred.model import PretrainedTransformer
 from spred.train import SingleTrainer, PairwiseTrainer
@@ -14,11 +12,6 @@ from abc import ABC, abstractmethod
 
 class TaskFactory(ABC):
     def __init__(self, config):
-        self.criterion_lookup = {'crossentropy': CrossEntropyLoss,
-                                 'conf1': AbstainingLoss,
-                                 'pairwise': PairwiseConfidenceLoss,
-                                 'dac': DACLoss,
-                                 'ce_w_er': LossWithErrorRegularization}
         self._decoder_lookup = {'simple': InterfaceADecoder,
                                 'abstaining': InterfaceBDecoder,
                                 'pretrained': InterfaceADecoder}
@@ -51,7 +44,7 @@ class TaskFactory(ABC):
 
     def model_factory(self):
         model_constructor = self._model_lookup[self.architecture]
-        if self.architecture == "simple":
+        if self.architecture in {"simple", "abstaining"}:
             return model_constructor(
                 input_size=self.input_size(),  # FIX THIS API!
                 hidden_sizes=(128, 64),
@@ -96,9 +89,7 @@ class TaskFactory(ABC):
         return optim_constr(model.parameters(), **params)
 
     def loss_factory(self):
-        lconfig = self.config['trainer']['loss']
-        params = {k: v for k, v in lconfig.items() if k != 'name'}
-        return self.criterion_lookup[lconfig['name']](**params)
+        return init_loss_fn(self.config)
 
     def scheduler_factory(self, optimizer):
         try:

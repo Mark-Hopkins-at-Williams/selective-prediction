@@ -17,8 +17,11 @@
       "bsz": 64,
       "n_epochs": 15,
       "loss": {
-        "name": "ce_w_er",
-        "lambda_param": 0.1
+        "name": "ereg",
+        "base_loss": {
+          "name": "crossentropy"
+        },
+        "lambda_param": 0.01
       }
     }
   }

@@ -19,6 +19,7 @@
       "loss": {
         "name": "crossentropy"
       }
-    }
+    },
+    "n_trials": 3
   }
 ]

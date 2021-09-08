@@ -6,7 +6,7 @@
     },
     "network": {
       "architecture": "abstaining",
-      "confidence": "max_non_abs"
+      "confidence": "max_non_abstain"
     },
     "trainer": {
       "optimizer": {
@@ -18,9 +18,9 @@
       "n_epochs": 15,
       "loss": {
         "name": "dac",
-        "warmup_epochs": 5,
-        "total_epochs": 15
+        "warmup_epochs": 5
       }
-    }
+    },
+    "n_trials": 3
   }
 ]

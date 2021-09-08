@@ -8,7 +8,7 @@
     },
     "network": {
       "architecture": "simple",
-      "confidence": "max_prob"
+      "confidence": "normals_gold"
     },
     "trainer": {
       "optimizer": {
@@ -22,6 +22,6 @@
         "name": "crossentropy"
       }
     },
-    "n_trials": 3
+    "n_trials": 1
   }
 ]

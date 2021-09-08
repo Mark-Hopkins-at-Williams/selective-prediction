@@ -354,16 +354,16 @@ def plot_metric(exp_results, metric_name):
     plt.show()
 
 
-def main(result_files):
+def main(result_files, metric):
     result_dbs = [(file, ResultDatabase.load(file)) for file in result_files]
     avg_results = [(file, result_db.averaged()[0]) for (file, result_db) in result_dbs]
-    plot_metric(avg_results, 'kendall_tau')
+    plot_metric(avg_results, metric)
 
 
 if __name__ == '__main__':
     i = 1
     files = []
-    while i < len(sys.argv):
+    while i < len(sys.argv) - 1:
         files.append(sys.argv[i])
         i += 1
-    main(files)
+    main(files, sys.argv[-1])

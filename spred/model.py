@@ -53,8 +53,9 @@ class InterfaceAFeedforward(Feedforward):
 class InterfaceBFeedforward(Feedforward):
  
     def __init__(self, input_size, hidden_sizes, output_size,
-                 confidence_extractor='inv_abs'):
-        super().__init__(input_size, hidden_sizes, output_size, confidence_extractor)
+                 loss_f, confidence_extractor='inv_abs'):
+        super().__init__(input_size, hidden_sizes, output_size,
+                         loss_f, confidence_extractor)
         self.final = nn.Linear(hidden_sizes[-1], output_size + 1)
 
 

@@ -16,8 +16,8 @@
       "scheduler": {
         "name": "linear"
       },
-      "bsz": 8,
-      "n_epochs": 15,
+      "bsz": 64,
+      "n_epochs": 3,
       "loss": {
         "name": "crossentropy"
       }

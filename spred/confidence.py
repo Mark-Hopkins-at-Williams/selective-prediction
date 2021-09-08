@@ -6,9 +6,9 @@ from spred.loss import softmax, gold_values
 def lookup_confidence_extractor(name, model):
     confidence_extractor_lookup = {'inv_abstain': inv_abstain_prob,
                                    'max_non_abstain': max_nonabstain_prob,
-                                   'abstain': abstention_prob,
                                    'max_prob': max_prob,
-                                   'random': random_confidence}
+                                   'random': random_confidence,
+                                   'normals_gold': normals_gold_conf}
     if name in confidence_extractor_lookup:
         return confidence_extractor_lookup[name]
     elif name == 'mc_dropout':
@@ -35,15 +35,18 @@ def max_prob(batch):
     return probs.max(dim=1).values
 
 
-def abstention_prob(batch):
-    output = batch['outputs']
-    probs = functional.softmax(output.clamp(min=-25, max=25), dim=-1)
-    return probs[:, -1]
-
-
 def random_confidence(batch):
     output = batch['outputs']
     return torch.rand(output.shape[0])
+
+
+def normals_gold_conf(batch):
+    # TRY AGAIN: this isn't the gold confidence for normals
+    inputs = batch['inputs']['inputs']
+    inputs = inputs[:,:2]
+    adjusted = inputs**2
+    adjusted = torch.stack([adjusted[:,0] / 0.5, adjusted[:,1] / 0.1])
+    return adjusted.sum(dim=0)
 
 
 class MCDropoutConfidence:
