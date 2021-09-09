@@ -1,15 +1,12 @@
 [
   {
     "task": {
-      "name": "normals",
-      "noise_dim": 50,
-      "n_train_batches": 200,
-      "n_validation_batches": 200,
-      "n_test_batches": 100
+      "name": "mnist",
+      "confuse": "all"
     },
     "network": {
       "architecture": "simple",
-      "confidence": "max_prob"
+      "confidence": "calib"
     },
     "trainer": {
       "optimizer": {
@@ -18,7 +15,7 @@
         "momentum": 0.9
       },
       "bsz": 64,
-      "n_epochs": 70,
+      "n_epochs": 15,
       "loss": {
         "name": "crossentropy"
       }

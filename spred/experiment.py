@@ -26,8 +26,8 @@ class Experiment:
             return 1
 
     def run(self):
-        trainer, model = self.task_factory.trainer_factory()
-        _, result = trainer(model)
+        trainer = self.task_factory.trainer_factory()
+        _, result = trainer()
         return result
 
 

@@ -9,7 +9,7 @@
     },
     "network": {
       "architecture": "simple",
-      "confidence": "max_prob"
+      "confidence": "calib"
     },
     "trainer": {
       "optimizer": {
@@ -18,7 +18,7 @@
         "momentum": 0.9
       },
       "bsz": 64,
-      "n_epochs": 70,
+      "n_epochs": 50,
       "loss": {
         "name": "crossentropy"
       }

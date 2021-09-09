@@ -66,3 +66,4 @@ class InterfaceCDecoder(Decoder):
             result = {'pred': p.item(), 'gold': g.item(),
                       'confidence': c.item(), 'abstain': False}
             yield result
+

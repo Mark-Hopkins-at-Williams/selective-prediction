@@ -30,15 +30,33 @@ class MnistTaskFactory(TaskFactory):
         style = "pairwise" if self.architecture == 'confident' else "single"
         ds = datasets.MNIST(MNIST_TRAIN_DIR, download=True,
                             train=True, transform=transform)
+        train_ds = [ds[i] for i in range(30000)]
         if confuse:
             loader_init = ConfusedMnistLoader if style == 'single' else ConfusedMnistPairLoader
-            loader = loader_init(ds, bsz, confuse, shuffle=True)
+            loader = loader_init(train_ds, bsz, confuse, shuffle=True)
         else:
             loader_init = MnistLoader if style == 'single' else MnistPairLoader
-            loader = loader_init(ds, bsz, shuffle=True)
+            loader = loader_init(train_ds, bsz, shuffle=True)
         return loader
 
-    def val_loader_factory(self):
+    def validation_loader_factory(self):
+        confuse = self.config['task']['confuse']
+        bsz = self.config['trainer']['bsz']
+        transform = transforms.Compose([transforms.ToTensor(),
+                                        transforms.Normalize((0.5,), (0.5,))])
+        style = "pairwise" if self.architecture == 'confident' else "single"
+        ds = datasets.MNIST(MNIST_TRAIN_DIR, download=True,
+                            train=True, transform=transform)
+        validation_ds = [ds[i] for i in range(30000, 60000)]
+        if confuse:
+            loader_init = ConfusedMnistLoader if style == 'single' else ConfusedMnistPairLoader
+            loader = loader_init(validation_ds, bsz, confuse, shuffle=True)
+        else:
+            loader_init = MnistLoader if style == 'single' else MnistPairLoader
+            loader = loader_init(validation_ds, bsz, shuffle=True)
+        return loader
+
+    def test_loader_factory(self):
         confuse = self.config['task']['confuse']
         bsz = self.config['trainer']['bsz']
         transform = transforms.Compose([transforms.ToTensor(),

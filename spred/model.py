@@ -1,16 +1,24 @@
 from torch import nn
-from spred.confidence import lookup_confidence_extractor
 from transformers import AutoModelForSequenceClassification
 
+class SelectiveModel(nn.Module):
 
-class Feedforward(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.epoch = 0
+
+    def notify(self, epoch):
+        self.epoch = epoch
+
+
+class Feedforward(SelectiveModel):
 
     def __init__(self, input_size, hidden_sizes, output_size,
-                 loss_f, confidence_extractor='max_prob'):
+                 loss_f, confidence_extractor):
         super().__init__()
         self.input_size = input_size
         self.output_size = output_size
-        self.confidence_extractor = lookup_confidence_extractor(confidence_extractor, self)
+        self.confidence_extractor = confidence_extractor
         self.dropout = nn.Dropout(p=0.5)
         self.linears = nn.ModuleList([])
         self.linears.append(nn.Linear(input_size, hidden_sizes[0]))
@@ -19,6 +27,9 @@ class Feedforward(nn.Module):
         self.final = nn.Linear(hidden_sizes[-1], output_size)
         self.relu = nn.ReLU()
         self.loss_f = loss_f
+
+    def notify(self, epoch):
+        self.loss_f.notify(epoch)
 
     def initial_layers(self, input_vec):
         nextout = input_vec
@@ -31,18 +42,21 @@ class Feedforward(nn.Module):
     def final_layers(self, input_vec, orig_input_vec, compute_conf):
         nextout = self.final(input_vec)
         if compute_conf:
-            confidences = self.confidence_extractor({'inputs': orig_input_vec,
+            confidences = self.confidence_extractor({'inputs': orig_input_vec['inputs'],
                                                      'outputs': nextout})
         else:
             confidences = None
         return nextout, confidences
 
-    def forward(self, batch, compute_conf=True):
+    def forward(self, batch, compute_conf=True, compute_loss=True):
         nextout = self.initial_layers(batch['inputs'])
         result, confidence = self.final_layers(nextout, batch, compute_conf)
-        loss = self.loss_f({'outputs': result,
-                            'confidences': confidence,
-                            'labels': batch['labels']})
+        if compute_loss:
+            loss = self.loss_f({'outputs': result,
+                                'confidences': confidence,
+                                'labels': batch['labels']})
+        else:
+            loss = None
         return {'outputs': result, 'loss': loss, 'confidences': confidence}
 
 
@@ -53,7 +67,7 @@ class InterfaceAFeedforward(Feedforward):
 class InterfaceBFeedforward(Feedforward):
  
     def __init__(self, input_size, hidden_sizes, output_size,
-                 loss_f, confidence_extractor='inv_abs'):
+                 loss_f, confidence_extractor):
         super().__init__(input_size, hidden_sizes, output_size,
                          loss_f, confidence_extractor)
         self.final = nn.Linear(hidden_sizes[-1], output_size + 1)
@@ -74,12 +88,12 @@ class InterfaceCFeedforward(Feedforward):
         return nextout, confidence
 
 
-class PretrainedTransformer(nn.Module):
+class PretrainedTransformer(SelectiveModel):
 
-    def __init__(self, base_model, confidence_extractor='max_prob'):
+    def __init__(self, base_model, confidence_extractor):
         super().__init__()
         self.model = AutoModelForSequenceClassification.from_pretrained(base_model, num_labels=2)
-        self.confidence_extractor = lookup_confidence_extractor(confidence_extractor, self)
+        self.confidence_extractor = confidence_extractor
 
     def forward(self, batch, compute_conf=True):
         outputs = self.model(**batch)
@@ -90,3 +104,4 @@ class PretrainedTransformer(nn.Module):
             confidence = None
         return {'outputs': outputs.logits, 'loss': outputs.loss,
                 'confidences': confidence}
+
