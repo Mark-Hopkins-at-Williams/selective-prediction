@@ -43,7 +43,7 @@ class Feedforward(SelectiveModel):
         nextout = self.final(input_vec)
         if compute_conf:
             confidences = self.confidence_extractor({'inputs': orig_input_vec['inputs'],
-                                                     'outputs': nextout})
+                                                     'outputs': nextout}, self)
         else:
             confidences = None
         return nextout, confidences
@@ -99,7 +99,7 @@ class PretrainedTransformer(SelectiveModel):
         outputs = self.model(**batch)
         if compute_conf:
             confidence = self.confidence_extractor({'inputs': batch,
-                                                    'outputs': outputs.logits})  # TODO: should we clone and detach?
+                                                    'outputs': outputs.logits}, self)  # TODO: should we clone and detach?
         else:
             confidence = None
         return {'outputs': outputs.logits, 'loss': outputs.loss,

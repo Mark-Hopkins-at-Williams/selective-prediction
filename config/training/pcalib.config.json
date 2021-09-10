@@ -1,0 +1,18 @@
+{
+  "network": {
+    "architecture": "simple",
+    "confidence": "postcalib"
+  },
+  "trainer": {
+    "optimizer": {
+      "name": "sgd",
+      "lr": 0.003,
+      "momentum": 0.9
+    },
+    "bsz": 64,
+    "n_epochs": 50,
+    "loss": {
+      "name": "crossentropy"
+    }
+  }
+}

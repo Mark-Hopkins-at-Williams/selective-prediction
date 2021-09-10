@@ -2,7 +2,7 @@ import unittest
 from math import log
 import torch
 from torch import tensor
-from spred.loss import NLLLoss, PairwiseConfidenceLoss, CrossEntropyLoss
+from spred.loss import CrossEntropyLoss
 from spred.loss import LossWithErrorRegularization
 from spred.loss import AbstainingLoss, DACLoss
 from spred.util import softmax, close_enough

@@ -4,11 +4,12 @@
       "name": "normals",
       "noise_dim": 50,
       "n_train_batches": 200,
-      "n_validation_batches": 100
+      "n_validation_batches": 200,
+      "n_test_batches": 100
     },
     "network": {
       "architecture": "simple",
-      "confidence": "max_prob"
+      "confidence": "mc_dropout"
     },
     "trainer": {
       "optimizer": {
@@ -17,15 +18,11 @@
         "momentum": 0.9
       },
       "bsz": 64,
-      "n_epochs": 70,
+      "n_epochs": 50,
       "loss": {
-        "name": "ereg",
-        "base_loss": {
-          "name": "crossentropy"
-        },
-        "lambda_param": 0.01
+        "name": "crossentropy"
       }
     },
-    "n_trials": 3
+    "n_trials": 1
   }
 ]

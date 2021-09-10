@@ -10,14 +10,19 @@ from spred.util import nonabstain_prob_mass, gold_values, softmax
 
 def init_loss_fn(config):
     loss_config = config['trainer']['loss']
+    n_epochs = config['trainer']['n_epochs']
+    return init_loss_fn_from_loss_config(loss_config, n_epochs)
+
+def init_loss_fn_from_loss_config(loss_config, n_epochs):
     loss_lookup = {'crossentropy': CrossEntropyLoss,
                    'ereg': LossWithErrorRegularization,
                    'conf1': AbstainingLoss,
-                   'pairwise': PairwiseConfidenceLoss,
                    'dac': DACLoss}
     params = {k: v for k, v in loss_config.items() if k != 'name'}
     if loss_config['name'] == 'dac':
-        params['total_epochs'] = config['trainer']['n_epochs']
+        params['total_epochs'] = n_epochs
+    elif loss_config['name'] == 'ereg':
+        params['base_loss'] = init_loss_fn_from_loss_config(loss_config['base_loss'], n_epochs)
     return loss_lookup[loss_config['name']](**params)
 
 
@@ -59,7 +64,7 @@ class LossWithErrorRegularization(ConfidenceLoss):
     def __init__(self, base_loss, lambda_param):
         super().__init__()
         self.lambda_param = lambda_param
-        self.base_loss = init_loss_fn(base_loss)
+        self.base_loss = base_loss
 
     def __call__(self, batch):
         output, gold, confidence = batch['outputs'], batch['labels'], batch['confidences']
@@ -202,19 +207,3 @@ class DACLoss(ConfidenceLoss):
                 return loss.mean()
             except RuntimeError as e:
                 print(e)
-
-
-class PairwiseConfidenceLoss(ConfidenceLoss):
-
-    def __call__(self, output_x, output_y, gold_x, gold_y, conf_x, conf_y):
-        def weighted_loss(weight_x, weight_y, loss_x, loss_y):
-            weight_pair = torch.stack([weight_x, weight_y], dim=-1)
-            softmaxed_weights = functional.softmax(weight_pair, dim=-1)
-            loss_pair = torch.stack([loss_x, loss_y], dim=-1)
-            return torch.sum(loss_pair * softmaxed_weights, dim=-1)
-
-        loss = torch.nn.NLLLoss()
-        nll_x = -loss(softmax(output_x), gold_x)
-        nll_y = -loss(softmax(output_y), gold_y)
-        losses = weighted_loss(conf_x, conf_y, nll_x, nll_y)
-        return -torch.log(losses.mean())

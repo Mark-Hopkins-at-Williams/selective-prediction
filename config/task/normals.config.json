@@ -1,0 +1,9 @@
+{
+  "task": {
+    "name": "normals",
+    "noise_dim": 50,
+    "n_train_batches": 200,
+    "n_validation_batches": 200,
+    "n_test_batches": 100
+  }
+}

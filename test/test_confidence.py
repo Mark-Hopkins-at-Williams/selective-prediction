@@ -5,7 +5,7 @@ import torch
 from torch import tensor, nn
 from spred.util import softmax, close_enough
 from spred.confidence import inv_abstain_prob, max_nonabstain_prob
-from spred.confidence import max_prob, abstention_prob, random_confidence
+from spred.confidence import max_prob, random_confidence
 from spred.confidence import MCDropoutConfidence
 
 
@@ -59,12 +59,6 @@ class TestConfidence(unittest.TestCase):
         expected = tensor([0.6439, 0.6439])
         close_enough(conf, expected)
 
-    def test_abstention_prob(self):
-        batch = example_batch1()
-        conf = abstention_prob(batch)
-        expected = tensor([0.6439, 0.0871])
-        close_enough(conf, expected)
-
     def test_random_confidence(self):
         batch = example_batch1()
         conf = random_confidence(batch)
@@ -79,7 +73,7 @@ class TestConfidence(unittest.TestCase):
         batch = example_batch1()
         expected = tensor([(0.7488 + 0.5377 + 0.3044 + 0.1397) / 4.0,
                            (0.9032 + 0.8694 + 0.7891 + 0.6308) / 4.0])
-        close_enough(conf_fn(batch), expected)
+        close_enough(conf_fn(batch, base_model), expected)
 
     def test_mc_dropout_variance(self):
         base_model = ExampleModel()
@@ -88,7 +82,7 @@ class TestConfidence(unittest.TestCase):
         batch = example_batch1()
         expected = tensor([numpy.var([0.7488, 0.5377, 0.3044, 0.1397], ddof=1),
                            numpy.var([0.9032, 0.8694, 0.7891, 0.6308], ddof=1)]).float()
-        close_enough(conf_fn(batch), expected)
+        close_enough(conf_fn(batch, base_model), expected)
 
 
 if __name__ == "__main__":

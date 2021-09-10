@@ -4,11 +4,12 @@
       "name": "normals",
       "noise_dim": 50,
       "n_train_batches": 200,
-      "n_validation_batches": 100
+      "n_validation_batches": 200,
+      "n_test_batches": 100
     },
     "network": {
-      "architecture": "abstaining",
-      "confidence": "max_non_abstain"
+      "architecture": "simple",
+      "confidence": "max_prob"
     },
     "trainer": {
       "optimizer": {
@@ -19,10 +20,13 @@
       "bsz": 64,
       "n_epochs": 70,
       "loss": {
-        "name": "dac",
-        "warmup_epochs": 5
+        "name": "ereg",
+        "base_loss": {
+          "name": "crossentropy"
+        },
+        "lambda_param": 0.01
       }
     },
-    "n_trials": 3
+    "n_trials": 1
   }
 ]

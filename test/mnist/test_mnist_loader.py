@@ -6,7 +6,7 @@ from torchvision import datasets, transforms
 import sys
 file_dir = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(1, join(file_dir, ".."))
-from spred.tasks.mnist.loader import confuse_two, MnistLoader, MnistPairLoader
+from spred.tasks.mnist import confuse_two, MnistLoader, MnistPairLoader
 
 
 def visualize_mnist_image(image_tensor):

@@ -1,9 +1,9 @@
 import unittest
 import torch
-from spred.tasks.mnist.model import inv_abstain_prob, max_nonabstain_prob
-from spred.tasks.mnist.examples import build_interface_a_net, run_interface_a_input
-from spred.tasks.mnist.examples import build_interface_b_net, run_interface_b_input
-from spred.tasks.mnist.examples import build_interface_c_net
+from spred.confidence import inv_abstain_prob, max_nonabstain_prob
+from test.mnist_examples import build_interface_a_net, run_interface_a_input
+from test.mnist_examples import build_interface_b_net, run_interface_b_input
+from test.mnist_examples import build_interface_c_net
 
 
 class TestMnistNetworks(unittest.TestCase):

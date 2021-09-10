@@ -1,14 +1,11 @@
 [
   {
     "task": {
-      "name": "normals",
-      "noise_dim": 50,
-      "n_train_batches": 200,
-      "n_validation_batches": 100
+      "name": "normals"
     },
     "network": {
       "architecture": "abstaining",
-      "confidence": "inv_abstain"
+      "confidence": "max_non_abs"
     },
     "trainer": {
       "optimizer": {
@@ -17,12 +14,12 @@
         "momentum": 0.9
       },
       "bsz": 64,
-      "n_epochs": 70,
+      "n_epochs": 15,
       "loss": {
-        "name": "dac",
+        "name": "conf1",
+        "alpha": 0.65,
         "warmup_epochs": 5
       }
-    },
-    "n_trials": 3
+    }
   }
 ]

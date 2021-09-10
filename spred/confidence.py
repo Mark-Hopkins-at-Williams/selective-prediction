@@ -50,18 +50,17 @@ def normals_gold_conf(batch, model=None):
 
 
 class MCDropoutConfidence:
-    def __init__(self, model, n_forward_passes=30, combo_fn=torch.mean):
+    def __init__(self, n_forward_passes=30, combo_fn=torch.mean):
         self.n_forward_passes = n_forward_passes
         self.combo_fn = combo_fn
 
     def __call__(self, batch, model):
-        input = batch['inputs']
         output = batch['outputs']
         preds = torch.max(output, dim=1).indices
         pred_probs = []
         for _ in range(self.n_forward_passes):
             model.train()
-            model_out = model(input, compute_conf=False)
+            model_out = model(batch, compute_conf=False, compute_loss=False)
             dropout_output = softmax(model_out['outputs'])
             pred_probs.append(gold_values(dropout_output, preds))
         pred_probs = torch.stack(pred_probs)

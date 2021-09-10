@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 import json
 from spred.analytics import Evaluator, EvaluationResult, EpochResult
-from spred.analytics import ExperimentResult
+from spred.analytics import ExperimentResult, ResultDatabase
 from spred.analytics import kendall_tau_distance, harsh_sort
 from spred.analytics import relativized_kendall_tau_distance
 
@@ -78,7 +78,7 @@ class TestEvaluator(unittest.TestCase):
         result = evaluator.get_result().as_dict()
         result = {k: round(result[k], 4) if result[k] is not None else None
                   for k in result}
-        expected = {'train_loss': None,
+        expected = {'validation_loss': None,
                     'avg_err_conf': 0.3, 'avg_crr_conf': 0.6333,
                     'auroc': 0.8333, 'aupr': 0.9028,
                     'capacity': 0.94, 'kendall_tau': 0.1667,
@@ -133,9 +133,9 @@ class TestEvaluator(unittest.TestCase):
             return ExperimentResult({'key': 'just an example'}, epoch_results)
 
         results = [example_result(0.4), example_result(0.6), example_result(0.8)]
-        print(results)
-        print(ExperimentResult.group_by_config(results))
-        print(ExperimentResult.averaged(results))
+        # print(results)
+        db = ResultDatabase(results)
+        # print(ResultDatabase.averaged(db))
 
 
 if __name__ == "__main__":
