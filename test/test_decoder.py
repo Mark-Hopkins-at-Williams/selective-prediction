@@ -1,8 +1,9 @@
 import unittest
 import torch
 from spred.model import InterfaceAFeedforward
-from spred.model import InterfaceBFeedforward, max_nonabstain_prob
-from spred.tasks.mnist.loader import MnistLoader
+from spred.model import InterfaceBFeedforward
+from spred.confidence import max_nonabstain_prob
+from spred.tasks.mnist import MnistLoader
 from spred.decoder import InterfaceADecoder, InterfaceBDecoder, InterfaceCDecoder
 from test.mnist.test_mnist_loader import load_mnist_data
 from spred.tasks.mnist.examples import build_interface_a_net

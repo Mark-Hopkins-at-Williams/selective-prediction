@@ -1,7 +1,7 @@
 import unittest
 import torch
 from torch import tensor
-from spred.tasks.normals.loader import NormalsLoader
+from spred.tasks.normals import NormalsLoader
 
 def approx(x, y, num_digits=4):
     return abs(x-y) < 1.0 * (10 ** -num_digits)
@@ -23,9 +23,9 @@ class TestNormalsLoader(unittest.TestCase):
         loader_iter = iter(loader)
         batch1 = next(loader_iter)
         batch2 = next(loader_iter)
-        assert batch1['input_vecs'].shape == (4, 5)
+        assert batch1['inputs'].shape == (4, 5)
         assert batch1['labels'].shape == (4, )
-        assert batch2['input_vecs'].shape == (4, 5)
+        assert batch2['inputs'].shape == (4, 5)
         assert batch2['labels'].shape == (4,)
         try:
             next(loader_iter)
