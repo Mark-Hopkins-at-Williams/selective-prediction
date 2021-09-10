@@ -1,9 +1,9 @@
 import json
-from spred.tasks.mnist.task import MnistTaskFactory
-from spred.tasks.normals.task import NormalsTaskFactory
-from spred.tasks.glue.task import ColaTaskFactory
-from spred.tasks.sst2.task import Sst2TaskFactory
-from spred.tasks.rte.task import RteTaskFactory
+from spred.tasks.mnist import MnistTaskFactory
+from spred.tasks.normals import NormalsTaskFactory
+from spred.tasks.cola import ColaTaskFactory
+from spred.tasks.sst2 import Sst2TaskFactory
+from spred.tasks.rte import RteTaskFactory
 from spred.analytics import ResultDatabase
 
 task_factories = {'mnist': MnistTaskFactory,

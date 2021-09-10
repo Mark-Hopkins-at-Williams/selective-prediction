@@ -7,6 +7,7 @@ from spred.loader import CalibrationLoader
 from spred.confidence import CalibratorConfidence, max_prob
 from spred.model import InterfaceAFeedforward, InterfaceBFeedforward
 from spred.model import PretrainedTransformer
+from spred.decoder import InterfaceADecoder, InterfaceBDecoder
 import torch.optim as optim
 from transformers import AdamW
 from transformers import get_scheduler
@@ -16,21 +17,29 @@ from spred.loss import init_loss_fn
 class Trainer(ABC):
 
     def __init__(self, config, train_loader, validation_loader, test_loader,
-                 decoder, n_epochs, visualizer, compute_conf):
+                 visualizer, compute_conf):
         self.config = config
         self.optimizer = None
         self.scheduler = None
         self.train_loader = train_loader
         self.validation_loader = validation_loader
         self.test_loader = test_loader
-        self.n_epochs = n_epochs
-        self.decoder = decoder
+        self.n_epochs =  self.config['trainer']['n_epochs']
+        self.decoder = self.init_decoder()
         self.visualizer = visualizer
         self.compute_conf = compute_conf
         self.device = (torch.device("cuda") if torch.cuda.is_available()
                        else torch.device("cpu"))
 
-    def model_factory(self, output_size=None):
+    def init_decoder(self):
+        decoder_lookup = {'simple': InterfaceADecoder,
+                          'abstaining': InterfaceBDecoder,
+                          'pretrained': InterfaceADecoder}
+        architecture = self.config['network']['architecture']
+        return decoder_lookup[architecture]()
+
+
+    def init_model(self, output_size=None):
         model_lookup = {'simple': InterfaceAFeedforward,
                         'abstaining': InterfaceBFeedforward,
                         'pretrained': PretrainedTransformer}
@@ -56,47 +65,50 @@ class Trainer(ABC):
                 confidence_extractor=confidence_fn
             )
 
-    def optimizer_factory(self, model):
-        optim_constrs = {'sgd': optim.SGD,
-                         'adamw': AdamW}
-        oconfig = self.config['trainer']['optimizer']
-        optim_constr = optim_constrs[oconfig['name']]
-        params = {k: v for k, v in oconfig.items() if k != 'name'}
-        self.optimizer = optim_constr(model.parameters(), **params)
+    def init_optimizer_and_scheduler(self, model):
+        def init_optimizer():
+            optim_constrs = {'sgd': optim.SGD,
+                             'adamw': AdamW}
+            oconfig = self.config['trainer']['optimizer']
+            optim_constr = optim_constrs[oconfig['name']]
+            params = {k: v for k, v in oconfig.items() if k != 'name'}
+            self.optimizer = optim_constr(model.parameters(), **params)
 
-    def scheduler_factory(self):
-        try:
-            scheduler_name = self.config['trainer']['scheduler']['name']
-        except KeyError:
-            print("*** WARNING: NO SCHEDULER PROVIDED ***")
-            scheduler_name = None
-        if scheduler_name == 'dac':
-            self.scheduler = optim.lr_scheduler.MultiStepLR(self.optimizer,
-                                                            milestones=[60, 80, 120],
-                                                            gamma=0.5)
-        elif scheduler_name == 'linear':
-            lr_scheduler = get_scheduler(
-                "linear",
-                optimizer=self.optimizer,
-                num_warmup_steps=0,
-                num_training_steps=self.n_epochs * len(self.train_loader)
-            )
-            self.scheduler = lr_scheduler
+        def init_scheduler():
+            try:
+                scheduler_name = self.config['trainer']['scheduler']['name']
+            except KeyError:
+                print("*** WARNING: NO SCHEDULER PROVIDED ***")
+                scheduler_name = None
+            if scheduler_name == 'dac':
+                self.scheduler = optim.lr_scheduler.MultiStepLR(self.optimizer,
+                                                                milestones=[60, 80, 120],
+                                                                gamma=0.5)
+            elif scheduler_name == 'linear':
+                lr_scheduler = get_scheduler(
+                    "linear",
+                    optimizer=self.optimizer,
+                    num_warmup_steps=0,
+                    num_training_steps=self.n_epochs * len(self.train_loader)
+                )
+                self.scheduler = lr_scheduler
+
+        init_optimizer()
+        init_scheduler()
 
 
 class BasicTrainer(Trainer):
     
     def __init__(self, config, train_loader, validation_loader, test_loader,
-                 decoder, n_epochs, visualizer=None, compute_conf=True):
+                 visualizer=None, compute_conf=True):
        super().__init__(config, train_loader, validation_loader, test_loader,
-                        decoder, n_epochs, visualizer, compute_conf)
+                        visualizer, compute_conf)
 
     def __call__(self):
         print("Training with config:")
         print(self.config)
-        model = self.model_factory()
-        self.optimizer_factory(model)
-        self.scheduler_factory()
+        model = self.init_model()
+        self.init_optimizer_and_scheduler(model)
         model = model.to(self.device)
         epoch_results = []
         for e in range(1, self.n_epochs+1):
@@ -139,31 +151,38 @@ class BasicTrainer(Trainer):
 class CalibratedTrainer(Trainer):
 
     def __init__(self, config, train_loader, validation_loader, test_loader,
-                 decoder, n_epochs, visualizer=None):
+                 visualizer=None):
         super().__init__(config, train_loader, validation_loader, test_loader,
-                         decoder, n_epochs, visualizer, compute_conf=False)
+                         visualizer, compute_conf=False)
         self.base_trainer = BasicTrainer(config, train_loader, test_loader, test_loader,
-                                         decoder, n_epochs, visualizer, compute_conf=False)
+                                         visualizer, compute_conf=False)
 
     def __call__(self):
         print("Training with config:")
         print(self.config)
-        base_model = self.model_factory()
+        base_model = self.init_model()
         base_model = base_model.to(self.device)
-        self.base_trainer.optimizer_factory(base_model)
-        self.base_trainer.scheduler_factory()
+        self.base_trainer.init_optimizer_and_scheduler(base_model)
         self.calib_trainer = BasicTrainer(self.config,
                                           CalibrationLoader(base_model, self.validation_loader),
                                           CalibrationLoader(base_model, self.test_loader),
                                           CalibrationLoader(base_model, self.test_loader),
-                                          self.decoder, self.n_epochs, self.visualizer, compute_conf=False)
-        calibration_model = self.model_factory(output_size=2)
+                                          self.visualizer, compute_conf=False)
+        calibration_model = self.init_model(output_size=2)
         calibration_model = calibration_model.to(self.device)
-        self.calib_trainer.optimizer_factory(calibration_model)
-        self.calib_trainer.scheduler_factory()
+        self.calib_trainer.init_optimizer_and_scheduler(calibration_model)
         confidence_fn = CalibratorConfidence(calibration_model)
         base_model.confidence_extractor = confidence_fn
-        print(base_model.confidence_extractor.calibrator)
+        return self.train(base_model, calibration_model)
+
+    @abstractmethod
+    def train(self, base_model, calibration_model):
+        ...
+
+
+class PostcalibratedTrainer(CalibratedTrainer):
+
+    def train(self, base_model, calibration_model):
         epoch_results = []
         for e in range(1, self.n_epochs + 1):
             base_model.notify(e)
@@ -178,6 +197,24 @@ class CalibratedTrainer(Trainer):
             calib_batch_loss = self.calib_trainer.epoch_step(calibration_model)
             eval_result = self.base_trainer.validate_and_analyze(base_model, e)
             epoch_results.append(EpochResult(e, calib_batch_loss, eval_result))
+            print("epoch {}:".format(e))
+            print(str(eval_result))
+        return base_model, ExperimentResult(self.config, epoch_results)
+
+
+class CocalibratedTrainer(CalibratedTrainer):
+
+    def train(self, base_model, calibration_model):
+        epoch_results = []
+        for e in range(1, self.n_epochs + 1):
+            base_model.train()
+            base_model.notify(e)
+            base_batch_loss = self.base_trainer.epoch_step(base_model)
+            base_model.eval()
+            calibration_model.notify(e)
+            self.calib_trainer.epoch_step(calibration_model)
+            eval_result = self.base_trainer.validate_and_analyze(base_model, e)
+            epoch_results.append(EpochResult(e, base_batch_loss, eval_result))
             print("epoch {}:".format(e))
             print(str(eval_result))
         return base_model, ExperimentResult(self.config, epoch_results)

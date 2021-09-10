@@ -2,6 +2,7 @@ import datasets
 from transformers import AutoTokenizer
 from spred.loader import Loader
 from torch.utils.data import DataLoader
+from spred.task import TaskFactory
 
 
 class TokenizerCache:
@@ -48,3 +49,20 @@ class RteLoader(Loader):
 
     def output_size(self):
         return 2
+
+
+class RteTaskFactory(TaskFactory):
+
+    def __init__(self, config):
+        super().__init__(config)
+        self.architecture = self.config['network']['architecture']
+
+    def train_loader_factory(self):
+        bsz = self.config['trainer']['bsz']
+        tokenizer = self.config['network']['base_model']
+        return RteLoader(bsz, split="train", tokenizer=tokenizer)
+
+    def val_loader_factory(self):
+        bsz = self.config['trainer']['bsz']
+        tokenizer = self.config['network']['base_model']
+        return RteLoader(bsz, split="validation", tokenizer=tokenizer)

@@ -2,16 +2,17 @@ import datasets
 from transformers import AutoTokenizer
 from spred.loader import Loader
 from torch.utils.data import DataLoader
+from spred.task import TaskFactory
 
 
-class Sst2Loader(Loader):
+class ColaLoader(Loader):
 
-    def __init__(self, bsz, split, tokenizer):
+    def __init__(self, bsz, split):
         super().__init__()
         self.split = split
         self.bsz = bsz
-        raw_datasets = datasets.load_dataset('glue', 'sst2')
-        self.tokenizer = AutoTokenizer.from_pretrained(tokenizer)
+        raw_datasets = datasets.load_dataset('glue', 'cola')
+        self.tokenizer = AutoTokenizer.from_pretrained("bert-base-cased")
         tokenized_datasets = raw_datasets.map(self.tokenize_function, batched=True)
         tokenized_datasets = tokenized_datasets.remove_columns(["sentence", "idx"])
         tokenized_datasets = tokenized_datasets.rename_column("label", "labels")
@@ -35,3 +36,21 @@ class Sst2Loader(Loader):
 
     def output_size(self):
         return 2
+
+    def restart(self):
+        return ColaLoader(self.bsz, self.split)
+
+
+class ColaTaskFactory(TaskFactory):
+
+    def __init__(self, config):
+        super().__init__(config)
+        self.architecture = self.config['network']['architecture']
+
+    def train_loader_factory(self):
+        bsz = self.config['trainer']['bsz']
+        return ColaLoader(bsz, split="train")
+
+    def val_loader_factory(self):
+        bsz = self.config['trainer']['bsz']
+        return ColaLoader(bsz, split="validation")

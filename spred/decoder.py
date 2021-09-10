@@ -8,7 +8,8 @@ from datasets import load_metric
 class Decoder(ABC):
 
     def __init__(self):
-        self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+        self.device = (torch.device("cuda") if torch.cuda.is_available()
+                       else torch.device("cpu"))
 
     def get_loss(self):
         if self.running_loss_denom == 0:
@@ -19,14 +20,14 @@ class Decoder(ABC):
     def make_predictions(self, outputs, labels, conf):
         ...
 
-    def __call__(self, net, data, loss_f=None):
+    def __call__(self, model, data, loss_f=None):
         self.running_loss_total = 0.0
         self.running_loss_denom = 0
         for batch in tqdm(data, total=len(data)):
             batch = {k: v.to(self.device) for k, v in batch.items()}
-            net.eval()
+            model.eval()
             with torch.no_grad():
-                model_out = net(batch, compute_conf=True)
+                model_out = model(batch, compute_conf=True)
                 outputs, loss, conf = model_out['outputs'], model_out['loss'], model_out['confidences']
             self.running_loss_total += loss.item()
             self.running_loss_denom += 1
