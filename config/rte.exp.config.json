@@ -1,11 +1,6 @@
 [
   {
     "task": "rte",
-    "training": "cocalib",
-    "n_trials": 1
-  },
-  {
-    "task": "rte",
     "training": "dac",
     "n_trials": 1
   },
@@ -19,7 +14,12 @@
     "training": "mcd",
     "n_trials": 1
   },
-    {
+  {
+    "task": "rte",
+    "training": "cocalib",
+    "n_trials": 0
+  },
+  {
     "task": "rte",
     "training": "sr",
     "n_trials": 0
