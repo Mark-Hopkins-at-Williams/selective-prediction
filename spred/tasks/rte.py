@@ -62,7 +62,7 @@ class RteTaskFactory(TaskFactory):
         tokenizer = self.config['network']['base_model']
         return RteLoader(bsz, split="train", tokenizer=tokenizer)
 
-    def val_loader_factory(self):
+    def validation_loader_factory(self):
         bsz = self.config['bsz']
         tokenizer = self.config['network']['base_model']
         return RteLoader(bsz, split="validation", tokenizer=tokenizer)
