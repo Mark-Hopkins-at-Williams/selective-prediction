@@ -1,5 +1,5 @@
 {
-  "confidence": "cocalib",
+  "confidence": "random",
   "loss": {
     "name": "crossentropy"
   }

@@ -1,5 +1,18 @@
 {
   "task": {
     "name": "cola"
-  }
+  },
+  "network": {
+    "architecture": "pretrained",
+    "base_model": "bert-base-cased"
+  },
+  "optimizer": {
+    "name": "adamw",
+    "lr": 5e-5
+  },
+  "scheduler": {
+    "name": "linear"
+  },
+  "bsz": 16,
+  "n_epochs": 3
 }

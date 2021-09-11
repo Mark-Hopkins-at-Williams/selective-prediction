@@ -1,18 +1,6 @@
 {
-  "network": {
-    "architecture": "simple",
-    "confidence": "max_prob"
-  },
-  "trainer": {
-    "optimizer": {
-      "name": "sgd",
-      "lr": 0.003,
-      "momentum": 0.9
-    },
-    "bsz": 64,
-    "n_epochs": 70,
-    "loss": {
-      "name": "crossentropy"
-    }
+  "confidence": "max_prob",
+  "loss": {
+    "name": "crossentropy"
   }
 }

@@ -48,9 +48,9 @@ class ColaTaskFactory(TaskFactory):
         self.architecture = self.config['network']['architecture']
 
     def train_loader_factory(self):
-        bsz = self.config['trainer']['bsz']
+        bsz = self.config['bsz']
         return ColaLoader(bsz, split="train")
 
     def val_loader_factory(self):
-        bsz = self.config['trainer']['bsz']
+        bsz = self.config['bsz']
         return ColaLoader(bsz, split="validation")

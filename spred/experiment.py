@@ -17,7 +17,7 @@ class Experiment:
 
     def __init__(self, config):
         self.config = config
-        self.task_factory = task_factories[config['task']['name']](config)
+        self.task = task_factories[config['task']['name']](config)
 
     def n_trials(self):
         if 'n_trials' in self.config:
@@ -26,28 +26,16 @@ class Experiment:
             return 1
 
     def run(self):
-        trainer = self.task_factory.trainer_factory()
+        trainer = self.task.trainer_factory()
         _, result = trainer()
         return result
 
-
-class ExperimentSequence:
-    def __init__(self, experiments):
-        self.experiments = experiments
-    
     @classmethod
-    def from_json(cls, configs_path):
-        with open(configs_path, 'r') as f:
-            configs = json.load(f)
-        experiments = []
-        for config in configs:
-            experiments.append(Experiment(config))
-        return cls(experiments)
+    def from_json(cls, model_config_path, train_config_path):
+        with open(model_config_path, 'r') as f:
+            model_config = json.load(f)
+        with open(train_config_path, 'r') as f:
+            train_config = json.load(f)
+        model_config.update(train_config)
+        return cls(model_config)
 
-    def run(self):
-        results = []
-        for experiment in self.experiments:
-            for _ in range(experiment.n_trials()):
-                result = experiment.run()
-                results.append(result)
-        return ResultDatabase(results)

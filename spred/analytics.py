@@ -1,3 +1,4 @@
+import os
 import sys
 from sklearn import metrics
 import numpy as np
@@ -116,26 +117,23 @@ class Evaluator:
         return self.fpr, self.tpr, self.auroc
 
     def risk_coverage_curve(self):
-        # TODO: this function currently plots *unconditional* error rate
-        #  against coverage
         if len(self.y_true) == 0 or len(self.y_scores) == 0:
             return None, None, None
         precision, _, thresholds = metrics.precision_recall_curve(self.y_true,
                                                                   self.y_scores)
         y_scores = sorted(self.y_scores)
         coverage = []
-        N = len(y_scores)
+        n = len(y_scores)
         j = 0
-        for i, t in enumerate(thresholds):
-            while j < len(y_scores) and y_scores[j] < t:
+        for t in thresholds:
+            while j < n and y_scores[j] < t:
                 j += 1
-            coverage.append((N - j) / N)
+            coverage.append((n - j) / n)
         coverage += [0.]
         conditional_err = 1 - precision
-        unconditional_err = conditional_err * coverage
         coverage = np.array(coverage)
-        capacity = 1 - metrics.auc(coverage, unconditional_err)
-        return coverage, unconditional_err, capacity
+        capacity = 1 - metrics.auc(coverage, conditional_err)
+        return coverage, conditional_err, capacity
 
     def get_result(self):
         _, _, auroc = self.roc_curve()
@@ -149,12 +147,9 @@ class Evaluator:
              'avg_crr_conf': (self.avg_crr_conf / self.n_correct
                               if self.n_correct > 0 else 0),
              'auroc': auroc,
-             'aupr': aupr,
              'capacity': capacity,
-             'precision': (self.n_correct / self.n_published
-                           if self.n_published > 0 else 0),
-             'coverage': (self.n_published / self.n_preds
-                          if self.n_preds > 0 else 0)
+             'accuracy': (self.n_correct / self.num_predictions()
+                           if self.num_predictions() > 0 else 0)
              })
 
 
@@ -354,16 +349,18 @@ def plot_metric(exp_results, metric_name):
     plt.show()
 
 
-def main(result_files, metric):
+def main(result_files, metric_name):
     result_dbs = [(file, ResultDatabase.load(file)) for file in result_files]
     avg_results = [(file, result_db.averaged()[0]) for (file, result_db) in result_dbs]
-    plot_metric(avg_results, metric)
+    plot_metric(avg_results, metric_name)
 
 
 if __name__ == '__main__':
     i = 1
-    files = []
-    while i < len(sys.argv) - 1:
-        files.append(sys.argv[i])
-        i += 1
-    main(files, sys.argv[-1])
+    directory = sys.argv[1]
+    metric = sys.argv[2]
+    print(os.listdir(directory))
+    files = [os.path.join(directory, f)
+             for f in os.listdir(directory)
+             if f.endswith('.results.json')]
+    main(files, metric)

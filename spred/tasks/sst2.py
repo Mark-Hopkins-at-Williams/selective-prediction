@@ -45,11 +45,11 @@ class Sst2TaskFactory(TaskFactory):
         self.architecture = self.config['network']['architecture']
 
     def train_loader_factory(self):
-        bsz = self.config['trainer']['bsz']
+        bsz = self.config['bsz']
         tokenizer = self.config['network']['base_model']
         return Sst2Loader(bsz, split="train", tokenizer=tokenizer)
 
     def val_loader_factory(self):
-        bsz = self.config['trainer']['bsz']
+        bsz = self.config['bsz']
         tokenizer = self.config['network']['base_model']
         return Sst2Loader(bsz, split="validation", tokenizer=tokenizer)

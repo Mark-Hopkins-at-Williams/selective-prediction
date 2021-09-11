@@ -5,5 +5,15 @@
     "n_train_batches": 200,
     "n_validation_batches": 200,
     "n_test_batches": 100
-  }
+  },
+  "network": {
+    "architecture": "simple"
+  },
+  "optimizer": {
+    "name": "sgd",
+    "lr": 0.003,
+    "momentum": 0.9
+  },
+  "bsz": 64,
+  "n_epochs": 50
 }

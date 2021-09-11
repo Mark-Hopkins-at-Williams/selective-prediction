@@ -26,7 +26,7 @@ class ExampleModel(nn.Module):
         super().__init__()
         self.i = 0
 
-    def forward(self, batch, compute_conf=True):
+    def forward(self, batch, compute_conf=True, compute_loss=True):
         batch_size = len(batch)
         outputs = tensor([[1.0 + x + self.i, 2.0 + x + self.i, 7.0 * x, 3.5 + x]
                           for x in range(batch_size)])
@@ -68,7 +68,7 @@ class TestConfidence(unittest.TestCase):
 
     def test_mc_dropout_mean(self):
         base_model = ExampleModel()
-        conf_fn = MCDropoutConfidence(base_model, n_forward_passes=4,
+        conf_fn = MCDropoutConfidence(n_forward_passes=4,
                                       combo_fn=torch.mean)
         batch = example_batch1()
         expected = tensor([(0.7488 + 0.5377 + 0.3044 + 0.1397) / 4.0,
@@ -77,7 +77,7 @@ class TestConfidence(unittest.TestCase):
 
     def test_mc_dropout_variance(self):
         base_model = ExampleModel()
-        conf_fn = MCDropoutConfidence(base_model, n_forward_passes=4,
+        conf_fn = MCDropoutConfidence(n_forward_passes=4,
                                       combo_fn=torch.var)
         batch = example_batch1()
         expected = tensor([numpy.var([0.7488, 0.5377, 0.3044, 0.1397], ddof=1),

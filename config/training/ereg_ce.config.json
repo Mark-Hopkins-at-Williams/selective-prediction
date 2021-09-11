@@ -1,23 +1,11 @@
 {
-  "network": {
-    "architecture": "simple",
-    "confidence": "max_prob"
-  },
-  "trainer": {
-    "optimizer": {
-      "name": "sgd",
-      "lr": 0.003,
-      "momentum": 0.9
+  "confidence": "max_prob",
+  "loss": {
+    "name": "ereg",
+    "base_loss": {
+      "name": "crossentropy"
     },
-    "bsz": 64,
-    "n_epochs": 70,
-    "loss": {
-      "name": "ereg",
-      "base_loss": {
-        "name": "crossentropy"
-      },
-      "lambda_param": 0.01
-    }
+    "lambda_param": 0.01
   }
 }
 

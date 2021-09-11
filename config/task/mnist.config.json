@@ -1,6 +1,16 @@
 {
   "task": {
     "name": "mnist",
-    "confuse": "all"
-  }
+    "confuse": "two"
+  },
+  "network": {
+    "architecture": "simple"
+  },
+  "optimizer": {
+    "name": "sgd",
+    "lr": 0.003,
+    "momentum": 0.9
+  },
+  "bsz": 64,
+  "n_epochs": 15
 }

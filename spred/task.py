@@ -37,9 +37,9 @@ class TaskFactory(ABC):
 
     def trainer_factory(self):
         def select_trainer():
-            if self.config['network']['confidence'] == 'postcalib':
+            if self.config['confidence'] == 'postcalib':
                 return PostcalibratedTrainer
-            elif self.config['network']['confidence'] == 'cocalib':
+            elif self.config['confidence'] == 'cocalib':
                 return CocalibratedTrainer
             else:
                 return BasicTrainer

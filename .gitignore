@@ -2,6 +2,7 @@ aux
 acctoken.txt
 data/
 models/
+results/
 *egg-info*
 *_pycache_*
 spred/mnist/data/

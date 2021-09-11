@@ -1,19 +1,7 @@
 {
-  "network": {
-    "architecture": "simple",
-    "confidence": "mc_dropout"
-  },
-  "trainer": {
-    "optimizer": {
-      "name": "sgd",
-      "lr": 0.003,
-      "momentum": 0.9
-    },
-    "bsz": 64,
-    "n_epochs": 50,
-    "loss": {
-      "name": "crossentropy"
-    }
+  "confidence": "mc_dropout",
+  "loss": {
+    "name": "crossentropy"
   }
 }
 

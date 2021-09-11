@@ -39,6 +39,16 @@ def example_batch2():
     batch = {'outputs': outputs, 'labels': labels, 'confidences': confs}
     return batch
 
+def example_batch3():
+    outputs = tensor([[-1., -2.],
+                     [3., -1.],
+                     [-3., 3.],
+                     [-1.5, 2.]])
+    labels = torch.tensor([1, 0, 1, 0])  # F T T F
+    confs = torch.tensor([0.2, 0.3, 0.4, 0.5], requires_grad=True)
+    batch = {'outputs': outputs, 'labels': labels, 'confidences': confs}
+    return confs, batch
+
 
 class TestLoss(unittest.TestCase):
 
@@ -57,6 +67,16 @@ class TestLoss(unittest.TestCase):
         expected_penalty = ((.6652-.6897)**2 + (.6652-.8214)**2 + (.5465-.6285)**2 +
                             (.5465-.6897)**2 + (.5465-.8214)**2 + (.7662-.8214)**2)
         close_enough(loss, base_loss + 0.5 * expected_penalty)
+
+    def test_error_reg_loss_grad(self):
+        base_loss_fn = lambda x: 1.0
+        loss_fn = LossWithErrorRegularization(base_loss_fn, lambda_param=0.5)
+        confs, batch = example_batch3()
+        loss = loss_fn(batch)
+        expected_penalty = ((.3-.5)**2 + (.4-.5)**2)
+        close_enough(loss, tensor(1.0 + 0.5 * expected_penalty))
+        loss.backward()
+        close_enough(confs.grad, tensor([ 0.0, -0.2, -0.1,  0.3]))
 
     def test_abstaining_loss(self):
         batch = example_batch2()
@@ -86,42 +106,6 @@ class TestLoss(unittest.TestCase):
         # print("DAC Loss: {}".format(loss))
         # print("CE Loss:  {}".format(ce_loss))
         # close_enough(loss, tensor(expected))
-
-    def test_pairwise1(self):
-        predictions_a = tensor([[-1., -2., -3.]])
-        gold_a = torch.tensor([1])
-        close_enough(softmax(predictions_a), tensor([[0.6652, 0.2447, 0.0900]]))
-        predictions_b = tensor([[0., -1., 3.]])
-        gold_b = torch.tensor([2])
-        close_enough(softmax(predictions_b), tensor([[0.0466, 0.0171, 0.9362]]))
-        conf_a = torch.tensor([-0.3])
-        conf_b = torch.tensor([1.8])
-        close_enough(softmax(tensor([[-0.3, 1.8]])), tensor([[0.1091, 0.8909]]))
-        loss_function = PairwiseConfidenceLoss()
-        loss = loss_function(predictions_a, predictions_b,
-                             gold_a, gold_b, conf_a, conf_b)
-        expected_loss = tensor(-log(0.1091 * 0.2447 + 0.8909 * 0.9362))
-        assert (torch.allclose(expected_loss, loss, atol=0.0001))
-
-    def test_pairwise2(self):
-        predictions_a = tensor([[-1., -2., -3.], [-0.4, 1.1, 0.3]])
-        gold_a = torch.tensor([1, 2])
-        close_enough(softmax(predictions_a), tensor([[0.6652, 0.2447, 0.0900],
-                                                     [0.1334, 0.5979, 0.2687]]))
-        predictions_b = tensor([[0., -1., 3.], [0.3, -0.7, -1.2]])
-        gold_b = torch.tensor([2, 0])
-        close_enough(softmax(predictions_b), tensor([[0.0466, 0.0171, 0.9362],
-                                                     [0.6285, 0.2312, 0.1402]]))
-        conf_a = torch.tensor([-0.3, 0.5])
-        conf_b = torch.tensor([1.8, 0.1])
-        close_enough(softmax(tensor([[-0.3, 1.8]])), tensor([[0.1091, 0.8909]]))
-        close_enough(softmax(tensor([[0.5, 0.1]])), tensor([[0.5987, 0.4013]]))
-        loss_function = PairwiseConfidenceLoss()
-        loss = loss_function(predictions_a, predictions_b,
-                             gold_a, gold_b, conf_a, conf_b)
-        expected_loss = tensor(0.5 * -(log(0.1091 * 0.2447 + 0.8909 * 0.9362)
-                                       + log(0.5987 * 0.2687 + 0.4013 * 0.6285)))
-        assert (torch.allclose(expected_loss, loss, atol=0.0001))
     """
 
 if __name__ == "__main__":

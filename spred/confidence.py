@@ -71,7 +71,7 @@ class CalibratorConfidence:
     def __init__(self, calibrator):
         self.calibrator = calibrator
 
-    def __call__(self, batch):
+    def __call__(self, batch, model=None):
         self.calibrator.eval()
         with torch.no_grad():
             calibrator_out = self.calibrator(batch, compute_conf=False, compute_loss=False)

@@ -75,7 +75,7 @@ class NormalsVisualizer(Visualizer):
             return [pt[0] for pt in pts]
         def y_coords(pts):
             return [pt[1] for pt in pts]
-        if epoch == self.last_epoch:
+        if False and epoch == self.last_epoch:
             val_instances = next(iter(val_loader.restart()))['inputs']
             pairs = [tuple(list(val_instances[i].numpy())[:2])
                      for i in range(len(val_instances))]
@@ -103,7 +103,7 @@ class NormalsTaskFactory(TaskFactory):
     def train_loader_factory(self):
         if self.train_loader is None:
             n_train_batches = self.config['task']['n_train_batches']
-            bsz = self.config['trainer']['bsz']
+            bsz = self.config['bsz']
             noise_dim = self.config['task']['noise_dim']
             return NormalsLoader(n_train_batches, bsz, noise_dim)
         else:
@@ -112,7 +112,7 @@ class NormalsTaskFactory(TaskFactory):
     def validation_loader_factory(self):
         if self.validation_loader is None:
             n_batches = self.config['task']['n_validation_batches']
-            bsz = self.config['trainer']['bsz']
+            bsz = self.config['bsz']
             noise_dim = self.config['task']['noise_dim']
             return NormalsLoader(n_batches, bsz, noise_dim)
         else:
@@ -121,11 +121,11 @@ class NormalsTaskFactory(TaskFactory):
     def test_loader_factory(self):
         if self.test_loader is None:
             n_test_batches = self.config['task']['n_test_batches']
-            bsz = self.config['trainer']['bsz']
+            bsz = self.config['bsz']
             noise_dim = self.config['task']['noise_dim']
             return NormalsLoader(n_test_batches, bsz, noise_dim)
         else:
             return self.test_loader.restart()
 
     def visualizer_factory(self):
-        return NormalsVisualizer(self.config['trainer']['n_epochs'])
+        return NormalsVisualizer(self.config['n_epochs'])

@@ -1,20 +1,11 @@
 {
+  "confidence": "inv_abstain",
   "network": {
-    "architecture": "abstaining",
-    "confidence": "inv_abstain"
+    "architecture": "abstaining"
   },
-  "trainer": {
-    "optimizer": {
-      "name": "sgd",
-      "lr": 0.003,
-      "momentum": 0.9
-    },
-    "bsz": 64,
-    "n_epochs": 70,
-    "loss": {
-      "name": "dac",
-      "warmup_epochs": 5
-    }
+  "loss": {
+    "name": "dac",
+    "warmup_epochs": 5
   }
 }
 

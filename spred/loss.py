@@ -9,8 +9,8 @@ from spred.util import renormalized_nonabstain_probs
 from spred.util import nonabstain_prob_mass, gold_values, softmax
 
 def init_loss_fn(config):
-    loss_config = config['trainer']['loss']
-    n_epochs = config['trainer']['n_epochs']
+    loss_config = config['loss']
+    n_epochs = config['n_epochs']
     return init_loss_fn_from_loss_config(loss_config, n_epochs)
 
 def init_loss_fn_from_loss_config(loss_config, n_epochs):
@@ -57,10 +57,7 @@ class CrossEntropyLoss(ConfidenceLoss):
 
 
 class LossWithErrorRegularization(ConfidenceLoss):
-    """
-    TODO: test the gradients and make sure they work properly.
 
-    """
     def __init__(self, base_loss, lambda_param):
         super().__init__()
         self.lambda_param = lambda_param

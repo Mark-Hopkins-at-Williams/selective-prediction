@@ -24,7 +24,7 @@ class Trainer(ABC):
         self.train_loader = train_loader
         self.validation_loader = validation_loader
         self.test_loader = test_loader
-        self.n_epochs =  self.config['trainer']['n_epochs']
+        self.n_epochs =  self.config['n_epochs']
         self.decoder = self.init_decoder()
         self.visualizer = visualizer
         self.compute_conf = compute_conf
@@ -48,7 +48,7 @@ class Trainer(ABC):
             output_size = self.train_loader.output_size()
         model_constructor = model_lookup[architecture]
         try:
-            confidence_fn = lookup_confidence_extractor(self.config['network']['confidence'])
+            confidence_fn = lookup_confidence_extractor(self.config['confidence'])
         except Exception:
             confidence_fn = None
         if architecture in {"simple", "abstaining"}:
@@ -69,14 +69,14 @@ class Trainer(ABC):
         def init_optimizer():
             optim_constrs = {'sgd': optim.SGD,
                              'adamw': AdamW}
-            oconfig = self.config['trainer']['optimizer']
+            oconfig = self.config['optimizer']
             optim_constr = optim_constrs[oconfig['name']]
             params = {k: v for k, v in oconfig.items() if k != 'name'}
             self.optimizer = optim_constr(model.parameters(), **params)
 
         def init_scheduler():
             try:
-                scheduler_name = self.config['trainer']['scheduler']['name']
+                scheduler_name = self.config['scheduler']['name']
             except KeyError:
                 print("*** WARNING: NO SCHEDULER PROVIDED ***")
                 scheduler_name = None
@@ -114,10 +114,9 @@ class BasicTrainer(Trainer):
         for e in range(1, self.n_epochs+1):
             batch_loss = self.epoch_step(model)
             eval_result = self.validate_and_analyze(model, e)
-            epoch_results.append(EpochResult(e, batch_loss, eval_result))
-            print("epoch {}:".format(e))
-            print("  training loss: ".format(e) + str(batch_loss))
-            print(str(eval_result))
+            epoch_result = EpochResult(e, batch_loss, eval_result)
+            epoch_results.append(epoch_result)
+            print(str(epoch_result))
         return model, ExperimentResult(self.config, epoch_results)
 
     def epoch_step(self, model):

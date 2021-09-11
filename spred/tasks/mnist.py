@@ -126,7 +126,7 @@ class MnistTaskFactory(TaskFactory):
 
     def train_loader_factory(self):
         confuse = self.config['task']['confuse']
-        bsz = self.config['trainer']['bsz']
+        bsz = self.config['bsz']
         transform = transforms.Compose([transforms.ToTensor(),
                                         transforms.Normalize((0.5,), (0.5,))])
         style = "pairwise" if self.architecture == 'confident' else "single"
@@ -143,7 +143,7 @@ class MnistTaskFactory(TaskFactory):
 
     def validation_loader_factory(self):
         confuse = self.config['task']['confuse']
-        bsz = self.config['trainer']['bsz']
+        bsz = self.config['bsz']
         transform = transforms.Compose([transforms.ToTensor(),
                                         transforms.Normalize((0.5,), (0.5,))])
         style = "pairwise" if self.architecture == 'confident' else "single"
@@ -160,7 +160,7 @@ class MnistTaskFactory(TaskFactory):
 
     def test_loader_factory(self):
         confuse = self.config['task']['confuse']
-        bsz = self.config['trainer']['bsz']
+        bsz = self.config['bsz']
         transform = transforms.Compose([transforms.ToTensor(),
                                         transforms.Normalize((0.5,), (0.5,))])
         ds = datasets.MNIST(MNIST_TEST_DIR, download=True,
