@@ -1,18 +1,18 @@
 [
   {
     "task": "rte",
-    "training": "dac",
+    "training": "mcd",
     "n_trials": 1
+  },
+  {
+    "task": "rte",
+    "training": "dac",
+    "n_trials": 0
   },
   {
     "task": "rte",
     "training": "dac2",
-    "n_trials": 1
-  },
-  {
-    "task": "rte",
-    "training": "mcd",
-    "n_trials": 1
+    "n_trials": 0
   },
   {
     "task": "rte",
