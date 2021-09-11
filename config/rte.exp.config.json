@@ -1,0 +1,17 @@
+[
+  {
+    "task": "rte",
+    "training": "random",
+    "n_trials": 1
+  },
+  {
+    "task": "rte",
+    "training": "sr",
+    "n_trials": 1
+  },
+  {
+    "task": "rte",
+    "training": "ereg_ce",
+    "n_trials": 1
+  }
+]
