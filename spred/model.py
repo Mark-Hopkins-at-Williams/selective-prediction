@@ -14,17 +14,18 @@ class SelectiveModel(nn.Module):
 class Feedforward(SelectiveModel):
 
     def __init__(self, input_size, hidden_sizes, output_size,
-                 loss_f, confidence_extractor):
+                 loss_f, confidence_extractor, include_abstain_output=False):
         super().__init__()
         self.input_size = input_size
-        self.output_size = output_size
+        self.output_size = output_size + 1 if include_abstain_output else output_size
+        print("OUTPUT SIZE: {}".format(self.output_size))
         self.confidence_extractor = confidence_extractor
         self.dropout = nn.Dropout(p=0.5)
         self.linears = nn.ModuleList([])
         self.linears.append(nn.Linear(input_size, hidden_sizes[0]))
         for i in range(len(hidden_sizes)-1):
             self.linears.append(nn.Linear(hidden_sizes[i], hidden_sizes[i+1]))
-        self.final = nn.Linear(hidden_sizes[-1], output_size)
+        self.final = nn.Linear(hidden_sizes[-1], self.output_size)
         self.relu = nn.ReLU()
         self.loss_f = loss_f
 
@@ -43,10 +44,17 @@ class Feedforward(SelectiveModel):
         nextout = self.final(input_vec)
         if compute_conf:
             confidences = self.confidence_extractor({'inputs': orig_input_vec['inputs'],
-                                                     'outputs': nextout}, self)
+                                                     'outputs': nextout}, self.lite_forward)
         else:
             confidences = None
         return nextout, confidences
+
+    def lite_forward(self, batch):
+        """ For use by MC Dropout. """
+        self.train()
+        nextout = self.initial_layers(batch)
+        nextout = self.final(nextout)
+        return {'outputs': nextout.detach()}
 
     def forward(self, batch, compute_conf=True, compute_loss=True):
         nextout = self.initial_layers(batch['inputs'])
@@ -60,39 +68,14 @@ class Feedforward(SelectiveModel):
         return {'outputs': result, 'loss': loss, 'confidences': confidence}
 
 
-class InterfaceAFeedforward(Feedforward):
-    pass
-
-
-class InterfaceBFeedforward(Feedforward):
- 
-    def __init__(self, input_size, hidden_sizes, output_size,
-                 loss_f, confidence_extractor):
-        super().__init__(input_size, hidden_sizes, output_size,
-                         loss_f, confidence_extractor)
-        self.final = nn.Linear(hidden_sizes[-1], output_size + 1)
-
-
-class InterfaceCFeedforward(Feedforward):
- 
-    def __init__(self, 
-                 input_size=784,
-                 hidden_sizes=(128, 64),
-                 output_size=10):
-        super().__init__(input_size, hidden_sizes, output_size)
-        self.confidence_layer = nn.Linear(hidden_sizes[1], 1)
-
-    def final_layers(self, input_vec, _, __):
-        nextout = self.final(input_vec)
-        confidence = self.confidence_layer(input_vec).reshape(-1)
-        return nextout, confidence
-
 
 class PretrainedTransformer(SelectiveModel):
 
-    def __init__(self, base_model, confidence_extractor):
+    def __init__(self, base_model, confidence_extractor, output_size,
+                 include_abstain_output=False):
         super().__init__()
-        self.model = AutoModelForSequenceClassification.from_pretrained(base_model, num_labels=2)
+        self.output_size = output_size + 1 if include_abstain_output else output_size
+        self.model = AutoModelForSequenceClassification.from_pretrained(base_model, num_labels=self.output_size)
         self.confidence_extractor = confidence_extractor
 
     def lite_forward(self, batch):

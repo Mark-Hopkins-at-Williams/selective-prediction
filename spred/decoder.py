@@ -1,24 +1,38 @@
 import torch
 from torch.nn import functional
 from tqdm import tqdm
-from abc import ABC, abstractmethod
 from datasets import load_metric
 
 
-class Decoder(ABC):
+class Decoder:
 
-    def __init__(self):
+    def __init__(self, include_abstain_output=False):
         self.device = (torch.device("cuda") if torch.cuda.is_available()
                        else torch.device("cpu"))
+        self.include_abstain_output = include_abstain_output
 
     def get_loss(self):
         if self.running_loss_denom == 0:
             return None
         return self.running_loss_total / self.running_loss_denom
 
-    @abstractmethod
     def make_predictions(self, outputs, labels, conf):
-        ...
+        if not self.include_abstain_output:
+            preds = outputs.argmax(dim=1)
+            for p, g, c in zip(preds, labels, conf):
+                yield {'pred': p.item(), 'gold': g.item(),
+                       'confidence': c.item(), 'abstain': False}
+        else:
+            output = functional.softmax(outputs.clamp(min=-25, max=25), dim=1)
+            preds = output.argmax(dim=-1)
+            abs_i = output.shape[1] - 1
+            preds[preds == abs_i] = -1
+            no_abstain_preds = output[:, :-1].argmax(dim=-1)
+            for element in zip(no_abstain_preds, labels, conf, preds):
+                p, g, c, p2 = element
+                result = {'pred': p.item(), 'gold': g.item(),
+                          'confidence': c.item(), 'abstain': p2.item() == -1}
+                yield result
 
     def __call__(self, model, data, loss_f=None):
         self.running_loss_total = 0.0
@@ -33,38 +47,3 @@ class Decoder(ABC):
             self.running_loss_denom += 1
             for pred in self.make_predictions(outputs, batch['labels'], conf):
                 yield pred
-
-
-class InterfaceADecoder(Decoder):
-
-    def make_predictions(self, outputs, labels, conf):
-        preds = outputs.argmax(dim=1)
-        for p, g, c in zip(preds, labels, conf):
-            yield {'pred': p.item(), 'gold': g.item(),
-                   'confidence': c.item(), 'abstain': False}
-
-
-class InterfaceBDecoder(Decoder):
-
-    def make_predictions(self, outputs, labels, conf):
-        output = functional.softmax(outputs.clamp(min=-25, max=25), dim=1)
-        preds = output.argmax(dim=-1)
-        abs_i = output.shape[1] - 1
-        preds[preds == abs_i] = -1
-        no_abstain_preds = output[:, :-1].argmax(dim=-1)
-        for element in zip(no_abstain_preds, labels, conf, preds):
-            p, g, c, p2 = element
-            result = {'pred': p.item(), 'gold': g.item(),
-                      'confidence': c.item(), 'abstain': p2.item() == -1}
-            yield result
-
-
-class InterfaceCDecoder(Decoder):
-
-    def make_predictions(self, outputs, labels, conf):
-        preds = outputs[:, :-1].argmax(dim=-1)
-        for p, g, c in zip(preds, labels, conf):
-            result = {'pred': p.item(), 'gold': g.item(),
-                      'confidence': c.item(), 'abstain': False}
-            yield result
-

@@ -1,8 +1,5 @@
 {
   "confidence": "max_non_abstain",
-  "network": {
-    "architecture": "abstaining"
-  },
   "loss": {
     "name": "dac",
     "warmup_epochs": 5

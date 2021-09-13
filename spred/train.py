@@ -5,9 +5,9 @@ import torch
 from tqdm import tqdm
 from spred.loader import CalibrationLoader
 from spred.confidence import CalibratorConfidence, max_prob
-from spred.model import InterfaceAFeedforward, InterfaceBFeedforward
+from spred.model import Feedforward
 from spred.model import PretrainedTransformer
-from spred.decoder import InterfaceADecoder, InterfaceBDecoder
+from spred.decoder import Decoder
 import torch.optim as optim
 from transformers import AdamW
 from transformers import get_scheduler
@@ -19,6 +19,8 @@ class Trainer(ABC):
     def __init__(self, config, train_loader, validation_loader, test_loader,
                  visualizer, compute_conf):
         self.config = config
+        self.include_abstain = (self.config['confidence'] in
+                                ['max_non_abstain', 'inv_abstain'])
         self.optimizer = None
         self.scheduler = None
         self.train_loader = train_loader
@@ -31,17 +33,12 @@ class Trainer(ABC):
         self.device = (torch.device("cuda") if torch.cuda.is_available()
                        else torch.device("cpu"))
 
-    def init_decoder(self):
-        decoder_lookup = {'simple': InterfaceADecoder,
-                          'abstaining': InterfaceBDecoder,
-                          'pretrained': InterfaceADecoder}
-        architecture = self.config['network']['architecture']
-        return decoder_lookup[architecture]()
 
+    def init_decoder(self):
+        return Decoder(self.include_abstain)
 
     def init_model(self, output_size=None):
-        model_lookup = {'simple': InterfaceAFeedforward,
-                        'abstaining': InterfaceBFeedforward,
+        model_lookup = {'simple': Feedforward,
                         'pretrained': PretrainedTransformer}
         architecture = self.config['network']['architecture']
         if output_size is None:
@@ -51,18 +48,21 @@ class Trainer(ABC):
             confidence_fn = lookup_confidence_extractor(self.config['confidence'])
         except Exception:
             confidence_fn = None
-        if architecture in {"simple", "abstaining"}:
+        if architecture in {"simple"}:
             return model_constructor(
                 input_size=self.train_loader.input_size(),  # FIX THIS API!
                 hidden_sizes=(128, 64),
                 output_size=output_size,
                 confidence_extractor=confidence_fn,
-                loss_f = init_loss_fn(self.config)
+                loss_f = init_loss_fn(self.config),
+                include_abstain_output = self.include_abstain
             )
         else:
             return model_constructor(
                 base_model=self.config['network']['base_model'],
-                confidence_extractor=confidence_fn
+                output_size=output_size,
+                confidence_extractor=confidence_fn,
+                include_abstain_output = self.include_abstain
             )
 
     def init_optimizer_and_scheduler(self, model):

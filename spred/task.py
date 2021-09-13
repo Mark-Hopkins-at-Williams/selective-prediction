@@ -1,5 +1,4 @@
 from spred.loss import init_loss_fn
-from spred.model import InterfaceAFeedforward, InterfaceBFeedforward
 from spred.model import PretrainedTransformer
 from spred.train import BasicTrainer, PostcalibratedTrainer, CocalibratedTrainer
 from spred.viz import Visualizer

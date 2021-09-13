@@ -6,7 +6,7 @@
   },
   {
     "task": "rte",
-    "training": "dac2",
+    "training": "mcd",
     "n_trials": 1
   },
   {

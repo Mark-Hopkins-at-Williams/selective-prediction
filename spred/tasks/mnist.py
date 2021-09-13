@@ -5,7 +5,7 @@ from os.path import join
 from torchvision import datasets
 from torchvision import transforms
 from spred.task import TaskFactory
-from spred.model import InterfaceAFeedforward, InterfaceBFeedforward
+from spred.model import Feedforward
 
 
 DATA_DIR = os.getenv('SPRED_DATA').strip()
@@ -120,16 +120,13 @@ class MnistTaskFactory(TaskFactory):
 
     def __init__(self, config):
         super().__init__(config)
-        self._model_lookup = {'simple': InterfaceAFeedforward,
-                              'abstaining': InterfaceBFeedforward}
-        self.architecture = self.config['network']['architecture']
 
     def train_loader_factory(self):
         confuse = self.config['task']['confuse']
         bsz = self.config['bsz']
         transform = transforms.Compose([transforms.ToTensor(),
                                         transforms.Normalize((0.5,), (0.5,))])
-        style = "pairwise" if self.architecture == 'confident' else "single"
+        style = "single"
         ds = datasets.MNIST(MNIST_TRAIN_DIR, download=True,
                             train=True, transform=transform)
         train_ds = [ds[i] for i in range(30000)]
@@ -146,7 +143,7 @@ class MnistTaskFactory(TaskFactory):
         bsz = self.config['bsz']
         transform = transforms.Compose([transforms.ToTensor(),
                                         transforms.Normalize((0.5,), (0.5,))])
-        style = "pairwise" if self.architecture == 'confident' else "single"
+        style = "single"
         ds = datasets.MNIST(MNIST_TRAIN_DIR, download=True,
                             train=True, transform=transform)
         validation_ds = [ds[i] for i in range(30000, 60000)]

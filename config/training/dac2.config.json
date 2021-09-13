@@ -1,8 +1,5 @@
 {
   "confidence": "inv_abstain",
-  "network": {
-    "architecture": "abstaining"
-  },
   "loss": {
     "name": "dac",
     "warmup_epochs": 5
