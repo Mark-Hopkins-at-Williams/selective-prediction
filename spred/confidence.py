@@ -59,7 +59,6 @@ class MCDropoutConfidence:
         preds = torch.max(output, dim=1).indices
         pred_probs = []
         for _ in range(self.n_forward_passes):
-            model.train()
             model_out = model(batch['inputs'], compute_conf=False, compute_loss=False)
             dropout_output = softmax(model_out['outputs'])
             pred_probs.append(gold_values(dropout_output, preds))

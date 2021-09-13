@@ -99,7 +99,7 @@ class PretrainedTransformer(SelectiveModel):
         outputs = self.model(**batch)
         if compute_conf:
             confidence = self.confidence_extractor({'inputs': batch,
-                                                    'outputs': outputs.logits}, self)  # TODO: should we clone and detach?
+                                                    'outputs': outputs.logits}, self.forward)  # TODO: should we clone and detach?
         else:
             confidence = None
         if compute_loss:
