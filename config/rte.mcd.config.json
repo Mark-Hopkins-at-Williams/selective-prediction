@@ -1,0 +1,7 @@
+[
+  {
+    "task": "rte",
+    "training": "mcd",
+    "n_trials": 1
+  }
+]

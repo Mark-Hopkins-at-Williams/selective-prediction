@@ -50,7 +50,7 @@ def normals_gold_conf(batch, model=None):
 
 
 class MCDropoutConfidence:
-    def __init__(self, n_forward_passes=30, combo_fn=torch.mean):
+    def __init__(self, n_forward_passes=1, combo_fn=torch.mean):
         self.n_forward_passes = n_forward_passes
         self.combo_fn = combo_fn
 
