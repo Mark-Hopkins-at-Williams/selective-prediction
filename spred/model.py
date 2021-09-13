@@ -95,13 +95,16 @@ class PretrainedTransformer(SelectiveModel):
         self.model = AutoModelForSequenceClassification.from_pretrained(base_model, num_labels=2)
         self.confidence_extractor = confidence_extractor
 
-    def forward(self, batch, compute_conf=True):
+    def forward(self, batch, compute_conf=True, compute_loss=True):
         outputs = self.model(**batch)
         if compute_conf:
             confidence = self.confidence_extractor({'inputs': batch,
                                                     'outputs': outputs.logits}, self)  # TODO: should we clone and detach?
         else:
             confidence = None
-        return {'outputs': outputs.logits, 'loss': outputs.loss,
-                'confidences': confidence}
+        if compute_loss:
+            return {'outputs': outputs.logits, 'loss': outputs.loss,
+                    'confidences': confidence}
+        else:
+            return {'outputs': outputs.logits, 'confidences': confidence}
 
