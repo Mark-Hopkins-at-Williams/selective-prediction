@@ -97,8 +97,7 @@ class PretrainedTransformer(SelectiveModel):
 
     def lite_forward(self, batch):
         outputs = self.model(**batch)
-        outputs.detach()
-        return {'outputs': outputs.logits, 'loss': outputs.loss}
+        return {'outputs': outputs.logits.detach(), 'loss': outputs.loss.detach()}
 
     def forward(self, batch, compute_conf=True, compute_loss=True):
         outputs = self.model(**batch)
