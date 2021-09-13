@@ -96,6 +96,8 @@ class PretrainedTransformer(SelectiveModel):
         self.confidence_extractor = confidence_extractor
 
     def lite_forward(self, batch):
+        """ For use by MC Dropout. """
+        self.model.train()
         outputs = self.model(**batch)
         return {'outputs': outputs.logits.detach(), 'loss': outputs.loss.detach()}
 
