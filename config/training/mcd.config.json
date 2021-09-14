@@ -2,6 +2,7 @@
   "confidence": "mc_dropout",
   "loss": {
     "name": "crossentropy"
-  }
+  },
+  "bsz": 8
 }
 

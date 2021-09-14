@@ -10,7 +10,7 @@ from statistics import mean
 rcParams['font.family'] = 'sans-serif'
 rcParams['font.sans-serif'] = ['Tahoma', 'DejaVu Sans', 'Ubuntu Condensed']
 from collections import defaultdict
-
+from statistics import median
 
 def harsh_sort(confidences, predictions):
     sorted_pairs = sorted(zip(confidences, predictions))
@@ -116,6 +116,10 @@ class Evaluator:
     def roc_curve(self):
         return self.fpr, self.tpr, self.auroc
 
+    def accuracy(self):
+        return (self.n_correct / self.num_predictions()
+                if self.num_predictions() > 0 else 0)
+
     def risk_coverage_curve(self):
         if len(self.y_true) == 0 or len(self.y_scores) == 0:
             return None, None, None
@@ -129,11 +133,11 @@ class Evaluator:
             while j < n and y_scores[j] < t:
                 j += 1
             coverage.append((n - j) / n)
-        coverage += [0.]
-        conditional_err = 1 - precision
-        coverage = np.array(coverage)
-        capacity = 1 - metrics.auc(coverage, conditional_err)
-        return coverage, conditional_err, capacity
+        coverage = np.array([1.] + coverage + [0.])
+        selective_risk = np.array([self.accuracy()] + list(precision))
+        selective_risk = 1 - selective_risk
+        capacity = 1 - metrics.auc(coverage, selective_risk)
+        return coverage, selective_risk, capacity
 
     def get_result(self):
         _, _, auroc = self.roc_curve()
@@ -178,24 +182,27 @@ class EvaluationResult:
         return self.result_dict == other.result_dict
 
     @staticmethod
-    def averaged(list_of_results):
-        def sum_result_dicts(this, other):
-            def process_key(key):
-                return this[key] + other[key]
-            assert (this.keys() == other.keys())
-            return {key: process_key(key) for key in this.keys()}
-
-        def normalize_result_dict(d, divisor):
-            def process_key(key):
-                return d[key] / divisor
-            return {key: process_key(key) for key in d.keys()}
-
+    def merge(list_of_results):
         list_of_result_dicts = [x.as_dict() for x in list_of_results]
-        result_sum = reduce(sum_result_dicts, list_of_result_dicts)
-        avg_result = normalize_result_dict(result_sum,
-                                           len(list_of_result_dicts))
-        return EvaluationResult(avg_result)
+        all_keys = set()
+        for d in list_of_result_dicts:
+            all_keys |= set(d.keys())
+        merged = {}
+        for key in all_keys:
+            merged[key] = [x[key] for x in list_of_result_dicts]
+        return merged
 
+    @staticmethod
+    def averaged(list_of_results):
+        merged = EvaluationResult.merge(list_of_results)
+        result = {key: mean(merged[key]) for key in merged}
+        return EvaluationResult(result)
+
+    @staticmethod
+    def median(list_of_results):
+        merged = EvaluationResult.merge(list_of_results)
+        result = {key: median(merged[key]) for key in merged}
+        return EvaluationResult(result)
 
 class EpochResult:
 
@@ -242,6 +249,16 @@ class EpochResult:
              'validation_result': avg_validation_results}
         return EpochResult.from_dict(d)
 
+    @staticmethod
+    def median(list_of_results):
+        assert len(list_of_results) > 0
+        validation_results = [x.validation_result for x in list_of_results]
+        avg_validation_results = EvaluationResult.median(validation_results)
+        avg_epoch = median([x.epoch for x in list_of_results])
+        avg_train_loss = median([x.get_train_loss() for x in list_of_results])
+        d = {'epoch': avg_epoch, 'train_loss': avg_train_loss,
+             'validation_result': avg_validation_results}
+        return EpochResult.from_dict(d)
 
 class ExperimentResult:
 

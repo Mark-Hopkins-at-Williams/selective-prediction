@@ -18,7 +18,6 @@ class Feedforward(SelectiveModel):
         super().__init__()
         self.input_size = input_size
         self.output_size = output_size + 1 if include_abstain_output else output_size
-        print("OUTPUT SIZE: {}".format(self.output_size))
         self.confidence_extractor = confidence_extractor
         self.dropout = nn.Dropout(p=0.5)
         self.linears = nn.ModuleList([])

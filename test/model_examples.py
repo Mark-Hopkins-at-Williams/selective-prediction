@@ -1,8 +1,6 @@
 import torch
 from torch import tensor
-from spred.model import InterfaceAFeedforward
-from spred.model import InterfaceBFeedforward
-from spred.model import InterfaceCFeedforward
+from spred.model import Feedforward
 from spred.loss import CrossEntropyLoss
 from spred.confidence import max_nonabstain_prob, max_prob
 
@@ -39,18 +37,20 @@ def set_ffn_params(net):
 
 
 def build_interface_a_net():
-    net = InterfaceAFeedforward(input_size=2, hidden_sizes=[2, 2], output_size=2,
-                                loss_f=CrossEntropyLoss(),
-                                confidence_extractor=max_prob)
+    net = Feedforward(input_size=2, hidden_sizes=[2, 2], output_size=2,
+                      loss_f=CrossEntropyLoss(),
+                      confidence_extractor=max_prob,
+                      include_abstain_output=False)
     set_ffn_params(net)
     net.eval()
     return net
 
 
 def build_interface_b_net():
-    net = InterfaceBFeedforward(input_size=2, hidden_sizes=[2, 2], output_size=2,
-                                loss_f=CrossEntropyLoss(),
-                                confidence_extractor=max_nonabstain_prob)
+    net = Feedforward(input_size=2, hidden_sizes=[2, 2], output_size=2,
+                      loss_f=CrossEntropyLoss(),
+                      confidence_extractor=max_nonabstain_prob,
+                      include_abstain_output=True)
     set_ffn_params(net)
     net.eval()
     return net

@@ -67,11 +67,11 @@ class TestEvaluator(unittest.TestCase):
     def test_risk_coverage_curve(self):
         evaluator = Evaluator(self.preds1)
         coverage, risk, capacity = evaluator.risk_coverage_curve()
-        expected_risk = np.array([0.2, 0.2, 0., 0., 0.])
-        expected_coverage = np.array([0.8, 0.6, 0.4, 0.2, 0.])
+        expected_risk = np.array([0.4, 0.25, 0.3333, 0., 0., 0.])
+        expected_coverage = np.array([1.0, 0.8, 0.6, 0.4, 0.2, 0.])
         assert compare(expected_risk, risk)
         assert compare(expected_coverage, coverage)
-        assert approx(capacity, 0.94)
+        assert approx(capacity, 0.84333)
 
     def test_evaluation_result_serialization(self):
         evaluator = Evaluator(self.preds1)
@@ -80,9 +80,9 @@ class TestEvaluator(unittest.TestCase):
                   for k in result}
         expected = {'validation_loss': None,
                     'avg_err_conf': 0.3, 'avg_crr_conf': 0.6333,
-                    'auroc': 0.8333, 'aupr': 0.9028,
-                    'capacity': 0.94, 'kendall_tau': 0.1667,
-                    'precision': 0.6, 'coverage': 1.0}
+                    'auroc': 0.8333,
+                    'capacity': 0.8433, 'kendall_tau': 0.1667,
+                    'accuracy': 0.6}
         assert result == expected
         result2 = EvaluationResult(expected)
         assert result2.as_dict() == expected
@@ -96,6 +96,28 @@ class TestEvaluator(unittest.TestCase):
         expected = EvaluationResult({'train_loss': 1.0, 'avg_err_conf': 2.0,
                                     'avg_crr_conf': 3.0, 'auroc': 6.0})
         assert avg == expected
+
+    def test_evaluation_result_merge(self):
+        result1 = EvaluationResult({'train_loss': 1.0, 'avg_err_conf': 2.0,
+                                    'avg_crr_conf': 3.0, 'auroc': 4.6})
+        result2 = EvaluationResult({'train_loss': 1.1, 'avg_err_conf': 2.1,
+                                    'avg_crr_conf': 3.1, 'auroc': 4.1})
+        result3 = EvaluationResult({'train_loss': 1.7, 'avg_err_conf': 2.7,
+                                    'avg_crr_conf': 3.7, 'auroc': 4.5})
+        result4 = EvaluationResult({'train_loss': 1.8, 'avg_err_conf': 2.8,
+                                    'avg_crr_conf': 3.3, 'auroc': 4.8})
+        result5 = EvaluationResult({'train_loss': 1.2, 'avg_err_conf': 2.9,
+                                    'avg_crr_conf': 3.9, 'auroc': 4.9})
+        merged = EvaluationResult.merge([result1, result2, result3, result4, result5])
+        expected = {'avg_crr_conf': [3.0, 3.1, 3.7, 3.3, 3.9],
+                    'train_loss': [1.0, 1.1, 1.7, 1.8, 1.2],
+                    'avg_err_conf': [2.0, 2.1, 2.7, 2.8, 2.9],
+                    'auroc': [4.6, 4.1, 4.5, 4.8, 4.9]}
+        assert merged == expected
+        median = EvaluationResult.median([result1, result2, result3, result4, result5])
+        expected = EvaluationResult({'train_loss': 1.2, 'avg_err_conf': 2.7,
+                                     'avg_crr_conf': 3.3, 'auroc': 4.6})
+        assert median == expected
 
     def test_epoch_result_serialization(self):
         validation_d = {'train_loss': 1.2, 'avg_err_conf': 0.3, 'avg_crr_conf': 0.6333,
