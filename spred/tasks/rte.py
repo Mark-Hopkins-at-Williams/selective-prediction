@@ -72,6 +72,7 @@ class RteTaskFactory(TaskFactory):
 
     def train_loader_factory(self):
         self.initialize_datasets()
+        print(self.train)
         return RteLoader(self.train, shuffle=True, bsz=self.bsz)
 
     def validation_loader_factory(self):
