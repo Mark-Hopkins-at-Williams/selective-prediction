@@ -42,11 +42,6 @@ class RteTaskFactory(TaskFactory):
 
     def __init__(self, config):
         super().__init__(config)
-        self.bsz = None
-        self.tokenizer = None
-        self.train = None
-        self.cotrain = None
-        self.test = None
         self.initialize_datasets()
 
     def initialize_datasets(self):
@@ -72,7 +67,6 @@ class RteTaskFactory(TaskFactory):
 
     def train_loader_factory(self):
         self.initialize_datasets()
-        print(self.train)
         return RteLoader(self.train, shuffle=True, bsz=self.bsz)
 
     def validation_loader_factory(self):
