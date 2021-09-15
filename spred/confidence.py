@@ -73,7 +73,7 @@ class CalibratorConfidence:
     def __call__(self, batch, model=None):
         self.calibrator.eval()
         with torch.no_grad():
-            calibrator_out = self.calibrator(batch, compute_conf=False, compute_loss=False)
+            calibrator_out = self.calibrator.lite_forward(batch['inputs'])
             dists = softmax(calibrator_out['outputs'])
             confs = dists[:, -1]
         return confs
