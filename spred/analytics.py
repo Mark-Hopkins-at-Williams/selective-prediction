@@ -266,9 +266,6 @@ class ExperimentResult:
         self.config = config
         self.epoch_results = epoch_results
 
-    def canonical_config(self):
-        return str(tuple(sorted(self.config.items()))) # TODO: FIX THIS HACK
-
     def as_dict(self):
         results_json = [result.as_dict() for result in self.epoch_results]
         return {'config': self.config,
@@ -283,13 +280,6 @@ class ExperimentResult:
         return json.dumps(self.as_dict(), indent=4, sort_keys=True)
 
     __repr__ = __str__
-
-    @staticmethod
-    def group_by_config(list_of_results):
-        groups = defaultdict(list)
-        for exp_result in list_of_results:
-            groups[exp_result.canonical_config()].append(exp_result)
-        return dict(groups)
 
 
 class ResultDatabase:
@@ -309,24 +299,17 @@ class ResultDatabase:
                               for d in experiment_results]
         return cls(experiment_results)
 
-    def averaged(self):
-        list_of_results = self.results
-        assert len(list_of_results) > 0
-        config_groups = ExperimentResult.group_by_config(list_of_results)
-        final_result = []
-        for (_, exp_results) in config_groups.items():
-            grouped_epoch_results = defaultdict(list)
-            for exp_result in exp_results:
-                for epoch_result in exp_result.epoch_results:
-                    grouped_epoch_results[epoch_result.epoch].append(epoch_result)
-            avg_epoch_results = []
-            for (epoch, epoch_results) in grouped_epoch_results.items():
-                avg_epoch_results.append((epoch, EpochResult.averaged(epoch_results)))
-            avg_epoch_results = [r for (_, r) in sorted(avg_epoch_results)]
-            avg_exp_result = ExperimentResult(exp_results[0].config,
-                                              avg_epoch_results)
-            final_result.append(avg_exp_result)
-        return final_result
+    def summary(self, combine_epoch_fn=EpochResult.median):
+        exp_results = self.results
+        grouped_epoch_results = defaultdict(list)
+        for exp_result in exp_results:
+            for epoch_result in exp_result.epoch_results:
+                grouped_epoch_results[epoch_result.epoch].append(epoch_result)
+        avg_epoch_results = []
+        for (epoch, epoch_results) in grouped_epoch_results.items():
+            avg_epoch_results.append((epoch, combine_epoch_fn(epoch_results)))
+        avg_epoch_results = [r for (_, r) in sorted(avg_epoch_results)]
+        return ExperimentResult(exp_results[0].config, avg_epoch_results)
 
 
 def show_training_dashboard(exp_result):
@@ -368,7 +351,7 @@ def plot_metric(exp_results, metric_name):
 
 def main(result_files, metric_name):
     result_dbs = [(file, ResultDatabase.load(file)) for file in result_files]
-    avg_results = [(file, result_db.averaged()[0]) for (file, result_db) in result_dbs]
+    avg_results = [(file, result_db.summary()) for (file, result_db) in result_dbs]
     plot_metric(avg_results, metric_name)
 
 

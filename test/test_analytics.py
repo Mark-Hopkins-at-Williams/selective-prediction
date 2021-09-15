@@ -154,10 +154,34 @@ class TestEvaluator(unittest.TestCase):
             epoch_results.append(EpochResult(2, k + 0.7, validation))
             return ExperimentResult({'key': 'just an example'}, epoch_results)
 
+        def expected_result():
+            epoch_results = []
+            validation = EvaluationResult({'dev_loss': 1.8, 'kendall_tau': 1.0})
+            epoch_results.append(EpochResult(1, 1.2, validation))
+            validation = EvaluationResult({'dev_loss': 1.2, 'kendall_tau': 0.8})
+            epoch_results.append(EpochResult(2, 1.3, validation))
+            return ExperimentResult({'key': 'just an example'}, epoch_results)
+
+        def close_enough_eval_results(res1, res2):
+            assert res1.keys() == res2.keys()
+            for key in res1.keys():
+                approx(res1[key], res2[key])
+
+        def close_enough_epoch_results(res1, res2):
+            res1 = res1.as_dict()
+            res2 = res2.as_dict()
+            assert res1['epoch'] == res2['epoch']
+            assert approx(res1['train_loss'], res2['train_loss'])
+            close_enough_eval_results(res1['validation_result'],
+                                      res2['validation_result'])
+
         results = [example_result(0.4), example_result(0.6), example_result(0.8)]
-        # print(results)
-        db = ResultDatabase(results)
-        # print(ResultDatabase.averaged(db))
+        summarized = ResultDatabase(results).summary()
+        expected = expected_result()
+        assert summarized.config == expected.config
+        for x, y in zip(summarized.epoch_results, expected.epoch_results):
+            close_enough_epoch_results(x,y)
+
 
 
 if __name__ == "__main__":
