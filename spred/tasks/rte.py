@@ -1,7 +1,7 @@
 import datasets
 from transformers import AutoTokenizer
 from spred.loader import Loader
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, random_split
 from spred.task import TaskFactory
 
 
@@ -20,22 +20,9 @@ tokenizer_cache = TokenizerCache()
 
 class RteLoader(Loader):
 
-    def __init__(self, bsz, split, tokenizer):
+    def __init__(self, dataset, shuffle, bsz):
         super().__init__()
-        self.split = split
-        self.bsz = bsz
-        raw_datasets = datasets.load_dataset('glue', 'rte')
-        self.tokenizer = tokenizer_cache.load(tokenizer)
-        tokenized_datasets = raw_datasets.map(self.tokenize_function, batched=True)
-        tokenized_datasets = tokenized_datasets.remove_columns(["sentence1", "sentence2", "idx"])
-        tokenized_datasets = tokenized_datasets.rename_column("label", "labels")
-        tokenized_datasets.set_format("torch")
-        dataset = tokenized_datasets[split]
-        shuffle = (split == "train")
-        self.dataloader = DataLoader(dataset, shuffle=shuffle, batch_size=bsz)
-
-    def tokenize_function(self, examples):
-        return self.tokenizer(examples["sentence1"], examples["sentence2"], padding="max_length", truncation=True)
+        # self.dataloader = DataLoader(dataset, shuffle=shuffle, batch_size=bsz)
 
     def __iter__(self):
         for batch in self.dataloader:
@@ -55,19 +42,39 @@ class RteTaskFactory(TaskFactory):
 
     def __init__(self, config):
         super().__init__(config)
-        self.architecture = self.config['network']['architecture']
+        self.bsz = None
+        self.tokenizer = None
+        self.train = None
+        self.cotrain = None
+        self.test = None
+        self.initialize_datasets()
+
+    def initialize_datasets(self):
+        if self.train is None:
+            self.bsz = self.config['bsz']
+            raw_datasets = datasets.load_dataset('glue', 'rte')
+            self.tokenizer = tokenizer_cache.load(tokenizer)
+            tokenized_datasets = raw_datasets.map(self.tokenize_function, batched=True)
+            tokenized_datasets = tokenized_datasets.remove_columns(["sentence1", "sentence2", "idx"])
+            tokenized_datasets = tokenized_datasets.rename_column("label", "labels")
+            tokenized_datasets.set_format("torch")
+            train_dataset = tokenized_datasets['train']
+            train_size = int(.5 * len(train_dataset))
+            cotrain_size = len(train_dataset) - train_size
+            self.train, self.cotrain = random_split(train_dataset, [train_size, cotrain_size])
+            self.test = tokenized_datasets['validation']
+
+    def tokenize_function(self, examples):
+        return self.tokenizer(examples["sentence1"], examples["sentence2"], padding="max_length", truncation=True)
 
     def train_loader_factory(self):
-        bsz = self.config['bsz']
-        tokenizer = self.config['network']['base_model']
-        return RteLoader(bsz, split="train", tokenizer=tokenizer)
+        self.initialize_datasets()
+        return RteLoader(self.train, shuffle=True, bsz=self.bsz)
 
     def validation_loader_factory(self):
-        bsz = self.config['bsz']
-        tokenizer = self.config['network']['base_model']
-        return RteLoader(bsz, split="validation", tokenizer=tokenizer)
+        self.initialize_datasets()
+        return RteLoader(self.cotrain, shuffle=True, bsz=self.bsz)
 
     def test_loader_factory(self):
-        bsz = self.config['bsz']
-        tokenizer = self.config['network']['base_model']
-        return RteLoader(bsz, split="validation", tokenizer=tokenizer)
+        self.initialize_datasets()
+        return RteLoader(self.test, shuffle=False, bsz=self.bsz)
