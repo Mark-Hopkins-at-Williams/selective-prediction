@@ -50,7 +50,9 @@ class RteTaskFactory(TaskFactory):
         self.initialize_datasets()
 
     def initialize_datasets(self):
-        if self.train is None:
+        try:
+            _ = self.train
+        except AttributeError:
             self.bsz = self.config['bsz']
             raw_datasets = datasets.load_dataset('glue', 'rte')
             self.tokenizer = tokenizer_cache.load(tokenizer)
