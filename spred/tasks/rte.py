@@ -53,6 +53,7 @@ class RteTaskFactory(TaskFactory):
         try:
             _ = self.train
         except AttributeError:
+            tokenizer = self.config['network']['base_model']
             self.bsz = self.config['bsz']
             raw_datasets = datasets.load_dataset('glue', 'rte')
             self.tokenizer = tokenizer_cache.load(tokenizer)
