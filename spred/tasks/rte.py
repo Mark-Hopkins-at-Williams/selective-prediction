@@ -22,7 +22,7 @@ class RteLoader(Loader):
 
     def __init__(self, dataset, shuffle, bsz):
         super().__init__()
-        # self.dataloader = DataLoader(dataset, shuffle=shuffle, batch_size=bsz)
+        self.dataloader = DataLoader(dataset, shuffle=shuffle, batch_size=bsz)
 
     def __iter__(self):
         for batch in self.dataloader:
