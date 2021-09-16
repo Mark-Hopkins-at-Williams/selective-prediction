@@ -1,6 +1,8 @@
 import torch
+from torch import tensor
 from torch.nn import functional
 from spred.loss import softmax, gold_values
+from sklearn.neighbors import NearestNeighbors
 
 
 def lookup_confidence_extractor(name):
@@ -66,6 +68,7 @@ class MCDropoutConfidence:
         confs = self.combo_fn(pred_probs, dim=0)
         return confs
 
+
 class CalibratorConfidence:
     def __init__(self, calibrator):
         self.calibrator = calibrator
@@ -77,3 +80,63 @@ class CalibratorConfidence:
             dists = softmax(calibrator_out['outputs'])
             confs = dists[:, -1]
         return confs
+
+
+def k_nearest_neighbors(t, k):
+    array = t.numpy()
+    nbrs = NearestNeighbors(n_neighbors=k, algorithm="ball_tree").fit(array)
+    _, indices = nbrs.kneighbors(array)
+    return torch.tensor(indices)
+
+
+def distance_to_set(pt, t):
+    array = torch.cat([pt.unsqueeze(dim=0), t])
+    nbrs = NearestNeighbors(n_neighbors=2, algorithm="ball_tree").fit(array)
+    distances, _ = nbrs.kneighbors(array)
+    return distances[0, -1]
+
+
+def high_density_set(t, k, alpha):
+    array = t.numpy()
+    nbrs = NearestNeighbors(n_neighbors=k, algorithm="ball_tree").fit(array)
+    distances, _ = nbrs.kneighbors(array)
+    sorted_radii = sorted(enumerate(distances[:, -1]), key=lambda x: x[1])
+    point_indices = sorted([pt for (pt, _) in sorted_radii][:int(alpha * len(sorted_radii))])
+    return t[point_indices]
+
+
+def group_by_label(batch):
+    result = dict()
+    lbls = batch['labels']
+    for value in lbls.unique().numpy():
+        mask = lbls == value
+        row_indices = tensor(range(len(mask)))[mask]
+        points = batch['inputs'][row_indices]
+        result[value] = points
+    return result
+
+
+def compute_high_density_sets(batch, k, alpha):
+    points_by_label = group_by_label(batch)
+    return {lbl: high_density_set(points_by_label[lbl], k, alpha)
+            for lbl in points_by_label}
+
+
+class TrustScore:
+    def __init__(self, train_batch, k, alpha):
+        self.k = k
+        self.alpha = alpha
+        self.high_density_sets = compute_high_density_sets(train_batch, k, alpha)
+
+    def __call__(self, batch, lite_model=None):
+        output = batch['outputs']
+        preds = torch.max(output, dim=1).indices
+        confidences = []
+        for i, point in enumerate(batch['inputs']):
+            dists = {key: distance_to_set(point, self.high_density_sets[key])
+                     for key in self.high_density_sets}
+            dist_to_pred_class = dists[preds[i].item()]
+            other_dists = [dists[key] for key in dists if key != preds[i].item()]
+            next_closest_dist = min(other_dists)
+            confidences.append(next_closest_dist / dist_to_pred_class)
+        return tensor(confidences)
