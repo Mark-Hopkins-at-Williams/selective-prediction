@@ -139,11 +139,11 @@ class BasicTrainer(Trainer):
 
     def validate_and_analyze(self, model, epoch):
         model.eval()
-        results = list(self.decoder(model, self.validation_loader))
-        validation_loss = self.decoder.get_loss()
+        results = list(self.decoder(model, self.test_loader))
+        test_loss = self.decoder.get_loss()
         if self.visualizer is not None:
-            self.visualizer.visualize(epoch, self.validation_loader, results)
-        eval_result = Evaluator(results, validation_loss).get_result()
+            self.visualizer.visualize(epoch, self.test_loader, results)
+        eval_result = Evaluator(results, test_loss).get_result()
         return eval_result
 
 
@@ -153,7 +153,7 @@ class CalibratedTrainer(Trainer):
                  visualizer=None):
         super().__init__(config, train_loader, validation_loader, test_loader,
                          visualizer, compute_conf=False)
-        self.base_trainer = BasicTrainer(config, train_loader, test_loader, test_loader,
+        self.base_trainer = BasicTrainer(config, train_loader, validation_loader, test_loader,
                                          visualizer, compute_conf=False)
 
     def __call__(self):
@@ -164,7 +164,7 @@ class CalibratedTrainer(Trainer):
         self.base_trainer.init_optimizer_and_scheduler(base_model)
         self.calib_trainer = BasicTrainer(self.config,
                                           CalibrationLoader(base_model, self.validation_loader),
-                                          CalibrationLoader(base_model, self.test_loader),
+                                          CalibrationLoader(base_model, self.train_loader),
                                           CalibrationLoader(base_model, self.test_loader),
                                           self.visualizer, compute_conf=False)
         calibration_model = self.init_model(output_size=2)
