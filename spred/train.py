@@ -114,6 +114,7 @@ class BasicTrainer(Trainer):
         print("Best validation accuracy at epoch {}".format(top_epoch))
         top_model = self.init_model()
         top_model.load_state_dict(top_state_dict)
+        top_model = top_model.to(self.device)
         eval_result = self.validate_and_analyze(top_model, top_epoch)
         print(str(eval_result))
         return top_model, ExperimentResult(self.config, epoch_results)
