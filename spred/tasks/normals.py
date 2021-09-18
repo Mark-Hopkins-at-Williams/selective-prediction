@@ -44,10 +44,11 @@ class NormalsLoader(Loader):
             instances = torch.tensor([pair[0] for pair in labeled]).float()
             labels = torch.tensor([pair[1] for pair in labeled])
             self.batches.append((instances, labels))
+            self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
     def __iter__(self):
         for instances, labels in self.batches:
-            yield {'inputs': instances, 'labels': labels}
+            yield {'inputs': instances.to(device), 'labels': labels.to(device)}
 
     def __len__(self):
         return self.num_batches

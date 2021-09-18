@@ -97,8 +97,8 @@ class BasicTrainer(Trainer):
         print("Training with config:")
         print(self.config)
         model = self.init_model()
-        self.init_optimizer_and_scheduler(model)
         model = model.to(self.device)
+        self.init_optimizer_and_scheduler(model)
         epoch_results = []
         top_epoch, top_state_dict = None, None
         top_validation_score = float('-inf')
