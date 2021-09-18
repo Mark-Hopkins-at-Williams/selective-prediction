@@ -48,7 +48,7 @@ class NormalsLoader(Loader):
 
     def __iter__(self):
         for instances, labels in self.batches:
-            yield {'inputs': instances.to(device), 'labels': labels.to(device)}
+            yield {'inputs': instances.to(self.device), 'labels': labels.to(self.device)}
 
     def __len__(self):
         return self.num_batches
