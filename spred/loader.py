@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 import torch
+from torch import tensor
+import random
 
 
 class Loader(ABC):
@@ -44,8 +46,40 @@ class CalibrationLoader(Loader):
         return len(self.base_loader)
 
     def input_size(self):
-        return None
+        return self.base_loader.input_size()
 
     def output_size(self):
-        return None
+        return 2
 
+
+class BalancedLoader(Loader):
+    def __init__(self, base_loader):
+        self.base_loader = base_loader
+
+    def __iter__(self):
+        for batch in self.base_loader:
+            rows_by_label = dict()
+            lbls = batch['labels']
+            for value in lbls.unique().numpy():
+                mask = lbls == value
+                row_indices = tensor(range(len(mask)))[mask]
+                rows_by_label[value] = list(row_indices.numpy())
+            sample_size = max([len(rows_by_label[lbl]) for lbl in rows_by_label])
+            choices = []
+            for lbl in rows_by_label:
+                choices += random.choices(rows_by_label[lbl], k=sample_size)
+            choices = tensor(choices)
+            balanced_batch = dict()
+            for key in batch:
+                balanced_batch[key] = batch[key][choices]
+            yield balanced_batch
+
+
+    def __len__(self):
+        return len(self.base_loader)
+
+    def input_size(self):
+        return self.base_loader.input_size()
+
+    def output_size(self):
+        return self.base_loader.output_size()

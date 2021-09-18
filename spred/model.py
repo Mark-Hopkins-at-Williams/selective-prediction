@@ -6,6 +6,10 @@ class SelectiveModel(nn.Module):
     def __init__(self):
         super().__init__()
         self.epoch = 0
+        self.confidence_extractor = None
+
+    def set_confidence_extractor(self, extractor):
+        self.confidence_extractor = extractor
 
     def notify(self, epoch):
         self.epoch = epoch
@@ -53,6 +57,12 @@ class Feedforward(SelectiveModel):
         self.train()
         nextout = self.initial_layers(batch)
         nextout = self.final(nextout)
+        return {'outputs': nextout.detach()}
+
+    def embed(self, batch):
+        """ For use by Trustscore. """
+        self.train()
+        nextout = self.initial_layers(batch['inputs'])
         return {'outputs': nextout.detach()}
 
     def forward(self, batch, compute_conf=True, compute_loss=True):

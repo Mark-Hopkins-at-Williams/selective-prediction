@@ -1,32 +1,7 @@
 [
   {
-    "task": "normals",
-    "training": "random",
-    "n_trials": 1
-  },
-  {
-    "task": "normals",
-    "training": "sr",
-    "n_trials": 1
-  },
-  {
-    "task": "normals",
-    "training": "ereg_ce",
-    "n_trials": 1
-  },
-  {
-    "task": "normals",
-    "training": "cocalib",
-    "n_trials": 1
-  },
-  {
-    "task": "normals",
-    "training": "dac",
-    "n_trials": 1
-  },
-  {
-    "task": "normals",
-    "training": "mcd",
+    "task": "rte",
+    "training": "ce",
     "n_trials": 1
   }
 ]

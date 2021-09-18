@@ -1,10 +1,9 @@
 from abc import ABC, abstractmethod
 from spred.analytics import Evaluator, ExperimentResult, EpochResult
-from spred.confidence import lookup_confidence_extractor
+from copy import deepcopy
 import torch
 from tqdm import tqdm
 from spred.loader import CalibrationLoader
-from spred.confidence import CalibratorConfidence, max_prob
 from spred.model import Feedforward
 from spred.model import PretrainedTransformer
 from spred.decoder import Decoder
@@ -16,20 +15,16 @@ from spred.loss import init_loss_fn
 
 class Trainer(ABC):
 
-    def __init__(self, config, train_loader, validation_loader, test_loader,
-                 visualizer, compute_conf):
+    def __init__(self, config, train_loader, validation_loader, conf_fn):
         self.config = config
-        self.include_abstain = (self.config['confidence'] in
-                                ['max_non_abstain', 'inv_abstain'])
+        self.include_abstain = self.config['loss']['name'] in ['dac']
         self.optimizer = None
         self.scheduler = None
         self.train_loader = train_loader
         self.validation_loader = validation_loader
-        self.test_loader = test_loader
         self.n_epochs =  self.config['n_epochs']
         self.decoder = self.init_decoder()
-        self.visualizer = visualizer
-        self.compute_conf = compute_conf
+        self.conf_fn = conf_fn
         self.device = (torch.device("cuda") if torch.cuda.is_available()
                        else torch.device("cpu"))
 
@@ -44,16 +39,12 @@ class Trainer(ABC):
         if output_size is None:
             output_size = self.train_loader.output_size()
         model_constructor = model_lookup[architecture]
-        try:
-            confidence_fn = lookup_confidence_extractor(self.config['confidence'])
-        except Exception:
-            confidence_fn = None
         if architecture in {"simple"}:
             return model_constructor(
                 input_size=self.train_loader.input_size(),  # FIX THIS API!
                 hidden_sizes=(128, 64),
                 output_size=output_size,
-                confidence_extractor=confidence_fn,
+                confidence_extractor=self.conf_fn,
                 loss_f = init_loss_fn(self.config),
                 include_abstain_output = self.include_abstain
             )
@@ -61,7 +52,7 @@ class Trainer(ABC):
             return model_constructor(
                 base_model=self.config['network']['base_model'],
                 output_size=output_size,
-                confidence_extractor=confidence_fn,
+                confidence_extractor=self.conf_fn,
                 include_abstain_output = self.include_abstain
             )
 
@@ -99,10 +90,8 @@ class Trainer(ABC):
 
 class BasicTrainer(Trainer):
     
-    def __init__(self, config, train_loader, validation_loader, test_loader,
-                 visualizer=None, compute_conf=True):
-       super().__init__(config, train_loader, validation_loader, test_loader,
-                        visualizer, compute_conf)
+    def __init__(self, config, train_loader, validation_loader, conf_fn):
+       super().__init__(config, train_loader, validation_loader, conf_fn)
 
     def __call__(self):
         print("Training with config:")
@@ -111,13 +100,23 @@ class BasicTrainer(Trainer):
         self.init_optimizer_and_scheduler(model)
         model = model.to(self.device)
         epoch_results = []
+        top_epoch, top_state_dict = None, None
+        top_validation_score = float('-inf')
         for e in range(1, self.n_epochs+1):
             batch_loss = self.epoch_step(model)
             eval_result = self.validate_and_analyze(model, e)
             epoch_result = EpochResult(e, batch_loss, eval_result)
             epoch_results.append(epoch_result)
             print(str(epoch_result))
-        return model, ExperimentResult(self.config, epoch_results)
+            if eval_result['accuracy'] > top_validation_score:
+                top_epoch, top_state_dict = e, deepcopy(model.state_dict())
+                top_validation_score = eval_result['accuracy']
+        print("Best validation accuracy at epoch {}".format(top_epoch))
+        top_model = self.init_model()
+        top_model.load_state_dict(top_state_dict)
+        eval_result = self.validate_and_analyze(top_model, top_epoch)
+        print(str(eval_result))
+        return top_model, ExperimentResult(self.config, epoch_results)
 
     def epoch_step(self, model):
         running_loss = 0.
@@ -125,8 +124,8 @@ class BasicTrainer(Trainer):
         for batch in tqdm(self.train_loader, total=len(self.train_loader)):
             batch = {k: v.to(self.device) for k, v in batch.items()}
             model.train()
-            model_out = model(batch, compute_conf=self.compute_conf)
-            output, loss, conf = model_out['outputs'], model_out['loss'], model_out['confidences']
+            model_out = model(batch)
+            output, loss = model_out['outputs'], model_out['loss']
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1)
             self.optimizer.step()
@@ -139,81 +138,8 @@ class BasicTrainer(Trainer):
 
     def validate_and_analyze(self, model, epoch):
         model.eval()
-        results = list(self.decoder(model, self.test_loader))
-        test_loss = self.decoder.get_loss()
-        if self.visualizer is not None:
-            self.visualizer.visualize(epoch, self.test_loader, results)
-        eval_result = Evaluator(results, test_loss).get_result()
+        results = list(self.decoder(model, self.validation_loader))
+        validation_loss = self.decoder.get_loss()
+        eval_result = Evaluator(results, validation_loss).get_result()
         return eval_result
 
-
-class CalibratedTrainer(Trainer):
-
-    def __init__(self, config, train_loader, validation_loader, test_loader,
-                 visualizer=None):
-        super().__init__(config, train_loader, validation_loader, test_loader,
-                         visualizer, compute_conf=False)
-        self.base_trainer = BasicTrainer(config, train_loader, validation_loader, test_loader,
-                                         visualizer, compute_conf=False)
-
-    def __call__(self):
-        print("Training with config:")
-        print(self.config)
-        base_model = self.init_model()
-        base_model = base_model.to(self.device)
-        self.base_trainer.init_optimizer_and_scheduler(base_model)
-        self.calib_trainer = BasicTrainer(self.config,
-                                          CalibrationLoader(base_model, self.validation_loader),
-                                          CalibrationLoader(base_model, self.train_loader),
-                                          CalibrationLoader(base_model, self.test_loader),
-                                          self.visualizer, compute_conf=False)
-        calibration_model = self.init_model(output_size=2)
-        calibration_model = calibration_model.to(self.device)
-        self.calib_trainer.init_optimizer_and_scheduler(calibration_model)
-        confidence_fn = CalibratorConfidence(calibration_model)
-        base_model.confidence_extractor = confidence_fn
-        return self.train(base_model, calibration_model)
-
-    @abstractmethod
-    def train(self, base_model, calibration_model):
-        ...
-
-
-class PostcalibratedTrainer(CalibratedTrainer):
-
-    def train(self, base_model, calibration_model):
-        epoch_results = []
-        for e in range(1, self.n_epochs + 1):
-            base_model.notify(e)
-            base_batch_loss = self.base_trainer.epoch_step(base_model)
-            eval_result = self.base_trainer.validate_and_analyze(base_model, e)
-            epoch_results.append(EpochResult(e, base_batch_loss, eval_result))
-            print("epoch {}:".format(e))
-            print(str(eval_result))
-        for e in range(1, self.n_epochs + 1):
-            base_model.eval()
-            calibration_model.notify(e)
-            calib_batch_loss = self.calib_trainer.epoch_step(calibration_model)
-            eval_result = self.base_trainer.validate_and_analyze(base_model, e)
-            epoch_results.append(EpochResult(e, calib_batch_loss, eval_result))
-            print("epoch {}:".format(e))
-            print(str(eval_result))
-        return base_model, ExperimentResult(self.config, epoch_results)
-
-
-class CocalibratedTrainer(CalibratedTrainer):
-
-    def train(self, base_model, calibration_model):
-        epoch_results = []
-        for e in range(1, self.n_epochs + 1):
-            base_model.train()
-            base_model.notify(e)
-            base_batch_loss = self.base_trainer.epoch_step(base_model)
-            base_model.eval()
-            calibration_model.notify(e)
-            self.calib_trainer.epoch_step(calibration_model)
-            eval_result = self.base_trainer.validate_and_analyze(base_model, e)
-            epoch_results.append(EpochResult(e, base_batch_loss, eval_result))
-            print("epoch {}:".format(e))
-            print(str(eval_result))
-        return base_model, ExperimentResult(self.config, epoch_results)

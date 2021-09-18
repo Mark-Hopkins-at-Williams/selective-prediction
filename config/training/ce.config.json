@@ -1,0 +1,20 @@
+{
+  "loss": {
+    "name": "crossentropy"
+  },
+  "confidences": [
+    {
+      "name": "trustscore"
+    },
+    {
+      "name": "max_prob"
+    },
+    {
+      "name": "random"
+    },
+    {
+      "name": "mc_dropout"
+    }
+  ]
+}
+

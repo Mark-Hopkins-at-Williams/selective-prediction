@@ -3,18 +3,24 @@ from torch import tensor
 from torch.nn import functional
 from spred.loss import softmax, gold_values
 from sklearn.neighbors import NearestNeighbors
+from spred.train import BasicTrainer
+from spred.loader import CalibrationLoader, BalancedLoader
 
-
-def lookup_confidence_extractor(name):
+def init_confidence_extractor(cconfig, config, task, model):
     confidence_extractor_lookup = {'inv_abstain': inv_abstain_prob,
                                    'max_non_abstain': max_nonabstain_prob,
                                    'max_prob': max_prob,
                                    'random': random_confidence,
                                    'normals_gold': normals_gold_conf}
+    name = cconfig['name']
     if name in confidence_extractor_lookup:
         return confidence_extractor_lookup[name]
     elif name == 'mc_dropout':
         return MCDropoutConfidence()
+    elif name == 'posttrained':
+        return PosttrainedConfidence(task, config, model)
+    elif name == 'trustscore':
+        return TrustScore(task.train_loader, model, k=10, alpha=.25)
     else:
         raise Exception('Confidence extractor not recognized: {}'.format(name))
 
@@ -69,14 +75,18 @@ class MCDropoutConfidence:
         return confs
 
 
-class CalibratorConfidence:
-    def __init__(self, calibrator):
-        self.calibrator = calibrator
+class PosttrainedConfidence:
+    def __init__(self, task, config, base_model):
+        calib_trainer = BasicTrainer(config,
+                                     BalancedLoader(CalibrationLoader(base_model, task.validation_loader)),
+                                     BalancedLoader(CalibrationLoader(base_model, task.train_loader)),
+                                     compute_conf=False)
+        self.confidence_model, _ = calib_trainer()
 
     def __call__(self, batch, model=None):
-        self.calibrator.eval()
+        self.confidence_model.eval()
         with torch.no_grad():
-            calibrator_out = self.calibrator.lite_forward(batch['inputs'])
+            calibrator_out = self.confidence_model.lite_forward(batch['inputs'])
             dists = softmax(calibrator_out['outputs'])
             confs = dists[:, -1]
         return confs
@@ -101,7 +111,7 @@ def high_density_set(t, k, alpha):
     nbrs = NearestNeighbors(n_neighbors=k, algorithm="ball_tree").fit(array)
     distances, _ = nbrs.kneighbors(array)
     sorted_radii = sorted(enumerate(distances[:, -1]), key=lambda x: x[1])
-    point_indices = sorted([pt for (pt, _) in sorted_radii][:int(alpha * len(sorted_radii))])
+    point_indices = sorted([pt for (pt, _) in sorted_radii][:int((1.-alpha) * len(sorted_radii))])
     return t[point_indices]
 
 
@@ -123,19 +133,35 @@ def compute_high_density_sets(batch, k, alpha):
 
 
 class TrustScore:
-    def __init__(self, train_batch, k, alpha):
+    def __init__(self, train_loader, model, k, alpha):
         self.k = k
         self.alpha = alpha
-        self.high_density_sets = compute_high_density_sets(train_batch, k, alpha)
+        self.model = model
+        full_dataset = None
+        for batch in train_loader:
+            self.model.eval()
+            with torch.no_grad():
+                model_out = self.model.embed(batch)
+            embedding = {'inputs': model_out['outputs'],
+                         'labels': batch['labels']}
+            if full_dataset is None:
+                full_dataset = embedding
+            elif len(full_dataset['inputs']) < 1000:
+                for key in full_dataset:
+                    full_dataset[key] = torch.cat([full_dataset[key], embedding[key]])
+        self.high_density_sets = compute_high_density_sets(full_dataset, k, alpha)
 
     def __call__(self, batch, lite_model=None):
         output = batch['outputs']
+        self.model.eval()
+        with torch.no_grad():
+            model_out = self.model.embed(batch)
         preds = torch.max(output, dim=1).indices
         confidences = []
-        for i, point in enumerate(batch['inputs']):
+        for i, point in enumerate(model_out['outputs']):
             dists = {key: distance_to_set(point, self.high_density_sets[key])
                      for key in self.high_density_sets}
-            dist_to_pred_class = dists[preds[i].item()]
+            dist_to_pred_class = max(0.00000001, dists[preds[i].item()])
             other_dists = [dists[key] for key in dists if key != preds[i].item()]
             next_closest_dist = min(other_dists)
             confidences.append(next_closest_dist / dist_to_pred_class)

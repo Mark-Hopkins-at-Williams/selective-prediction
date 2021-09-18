@@ -1,6 +1,0 @@
-{
-  "confidence": "cocalib",
-  "loss": {
-    "name": "crossentropy"
-  }
-}

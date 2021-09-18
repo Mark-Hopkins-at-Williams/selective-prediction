@@ -5,6 +5,8 @@ from spred.tasks.cola import ColaTaskFactory
 from spred.tasks.sst2 import Sst2TaskFactory
 from spred.tasks.rte import RteTaskFactory
 from spred.analytics import ResultDatabase
+from spred.confidence import init_confidence_extractor, random_confidence
+from spred.decoder import validate_and_analyze
 
 task_factories = {'mnist': MnistTaskFactory,
                   'normals': NormalsTaskFactory,
@@ -26,8 +28,21 @@ class Experiment:
             return 1
 
     def run(self):
-        trainer = self.task.trainer_factory()
-        _, result = trainer()
+        training_conf_fn = random_confidence
+        if self.config['loss']['name'] == 'ereg':
+            confidence_config = self.config['loss']['confidence']
+            training_conf_fn = init_confidence_extractor(confidence_config, self.config,
+                                                         self.task, None)
+        trainer = self.task.trainer_factory(training_conf_fn)
+        model, result = trainer()
+        test_loader = self.task.test_loader_factory()
+        for confidence_config in self.config['confidences']:
+            conf_fn = init_confidence_extractor(confidence_config, self.config,
+                                                self.task, model)
+            model.set_confidence_extractor(conf_fn)
+            result = validate_and_analyze(model, test_loader)
+            print(confidence_config)
+            print(result)
         return result
 
     @classmethod

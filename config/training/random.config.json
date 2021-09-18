@@ -1,6 +1,0 @@
-{
-  "confidence": "random",
-  "loss": {
-    "name": "crossentropy"
-  }
-}

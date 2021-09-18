@@ -3,7 +3,7 @@ from torch import tensor
 from spred.model import Feedforward
 from spred.loss import CrossEntropyLoss
 from spred.confidence import max_nonabstain_prob, max_prob
-
+from spred.loader import Loader
 
 
 class ExampleFeedforwardLoader:
@@ -17,6 +17,25 @@ class ExampleFeedforwardLoader:
 
     def __len__(self):
         return 1
+
+
+class ExampleLoader(Loader):
+    def __init__(self, batches, output_size):
+        self.batches = batches
+        self.output_size = output_size
+
+    def __iter__(self):
+        for batch in self.batches:
+            yield batch
+
+    def __len__(self):
+        return len(self.batches)
+
+    def input_size(self):
+        return self.batches[0].shape[1]
+
+    def output_size(self):
+        return self.output_size
 
 
 def set_ffn_params(net):

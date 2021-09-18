@@ -1,7 +1,14 @@
 {
-  "confidence": "max_non_abstain",
   "loss": {
     "name": "dac",
     "warmup_epochs": 5
-  }
+  },
+  "confidences": [
+    {
+      "name": "max_non_abstain"
+    },
+    {
+      "name": "inv_abstain"
+    }
+  ]
 }

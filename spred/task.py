@@ -1,7 +1,6 @@
 from spred.loss import init_loss_fn
 from spred.model import PretrainedTransformer
-from spred.train import BasicTrainer, PostcalibratedTrainer, CocalibratedTrainer
-from spred.viz import Visualizer
+from spred.train import BasicTrainer
 from abc import ABC, abstractmethod
 
 
@@ -34,22 +33,15 @@ class TaskFactory(ABC):
     def output_size(self):
         return self.train_loader.output_size()
 
-    def trainer_factory(self):
+    def trainer_factory(self, conf_fn):
         def select_trainer():
-            if self.config['confidence'] == 'postcalib':
-                return PostcalibratedTrainer
-            elif self.config['confidence'] == 'cocalib':
-                return CocalibratedTrainer
-            else:
-                return BasicTrainer
+            return BasicTrainer
 
         train_loader = self.train_loader_factory()
         validation_loader = self.validation_loader_factory()
-        test_loader = self.test_loader_factory()
-        visualizer = self.visualizer_factory()
         trainer_class = select_trainer()
         trainer = trainer_class(self.config, train_loader, validation_loader,
-                                test_loader, visualizer)
+                                conf_fn=conf_fn)
         return trainer
 
     def visualizer_factory(self):

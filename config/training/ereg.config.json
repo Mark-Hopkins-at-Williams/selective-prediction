@@ -1,0 +1,21 @@
+{
+  "loss": {
+    "name": "ereg",
+    "base_loss": {
+      "name": "crossentropy"
+    },
+    "confidence": {
+      "name": "max_prob"
+    },
+    "lambda_param": 0.01
+  },
+  "confidences": [
+    {
+      "name": "max_prob"
+    },
+    {
+      "name": "mc_dropout"
+    }
+  ]
+}
+

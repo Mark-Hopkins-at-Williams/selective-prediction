@@ -58,7 +58,7 @@ class CrossEntropyLoss(ConfidenceLoss):
 
 class LossWithErrorRegularization(ConfidenceLoss):
 
-    def __init__(self, base_loss, lambda_param):
+    def __init__(self, base_loss, lambda_param, confidence):
         super().__init__()
         self.lambda_param = lambda_param
         self.base_loss = base_loss

@@ -2,6 +2,18 @@ import torch
 from torch.nn import functional
 from tqdm import tqdm
 from datasets import load_metric
+from spred.analytics import Evaluator
+
+
+def validate_and_analyze(model, validation_loader, epoch=0, visualizer=None):
+    decoder = Decoder()
+    model.eval()
+    results = list(decoder(model, validation_loader))
+    validation_loss = decoder.get_loss()
+    if visualizer is not None:
+        visualizer.visualize(epoch, validation_loader, results)
+    eval_result = Evaluator(results, validation_loss).get_result()
+    return eval_result
 
 
 class Decoder:
@@ -47,3 +59,4 @@ class Decoder:
             self.running_loss_denom += 1
             for pred in self.make_predictions(outputs, batch['labels'], conf):
                 yield pred
+

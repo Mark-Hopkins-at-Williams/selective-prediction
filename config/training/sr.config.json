@@ -1,6 +1,0 @@
-{
-  "confidence": "max_prob",
-  "loss": {
-    "name": "crossentropy"
-  }
-}
