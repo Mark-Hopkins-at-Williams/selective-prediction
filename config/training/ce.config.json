@@ -4,9 +4,6 @@
   },
   "confidences": [
     {
-      "name": "trustscore"
-    },
-    {
       "name": "max_prob"
     },
     {
