@@ -1,17 +1,7 @@
 [
   {
     "task": "normals",
-    "training": "ce",
-    "n_trials": 1
-  },
-  {
-    "task": "normals",
-    "training": "dac",
-    "n_trials": 1
-  },
-  {
-    "task": "normals",
-    "training": "ereg",
+    "training": "ts",
     "n_trials": 1
   }
 ]

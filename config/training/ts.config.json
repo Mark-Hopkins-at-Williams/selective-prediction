@@ -1,0 +1,11 @@
+{
+  "loss": {
+    "name": "crossentropy"
+  },
+  "confidences": [
+    {
+      "name": "trustscore"
+    }
+  ]
+}
+
