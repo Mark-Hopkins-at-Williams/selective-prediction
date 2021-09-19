@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import torch
+import numpy
 from numpy.random import multivariate_normal
 from numpy import diag
 from random import shuffle
@@ -41,7 +42,7 @@ class NormalsLoader(Loader):
                        [(pt, 1) for pt in pts2a] +
                        [(pt, 1) for pt in pts2b])
             shuffle(labeled)
-            instances = torch.tensor([pair[0].array() for pair in labeled]).float()
+            instances = torch.tensor(numpy.array([pair[0] for pair in labeled])).float()
             labels = torch.tensor([pair[1] for pair in labeled])
             self.batches.append((instances, labels))
             self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
