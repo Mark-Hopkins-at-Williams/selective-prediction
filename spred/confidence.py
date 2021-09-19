@@ -100,7 +100,7 @@ def k_nearest_neighbors(t, k):
 
 
 def distance_to_set(pt, t):
-    array = torch.cat([pt.unsqueeze(dim=0), t])
+    array = torch.cat([pt.unsqueeze(dim=0), t]).cpu().numpy()
     nbrs = NearestNeighbors(n_neighbors=2, algorithm="ball_tree").fit(array)
     distances, _ = nbrs.kneighbors(array)
     return distances[0, -1]
