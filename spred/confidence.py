@@ -137,8 +137,11 @@ class TrustScore:
         self.k = k
         self.alpha = alpha
         self.model = model
+        device = (torch.device("cuda") if torch.cuda.is_available()
+                  else torch.device("cpu"))
         full_dataset = None
         for batch in train_loader:
+            batch = {k: v.to(device) for k, v in batch.items()}
             self.model.eval()
             with torch.no_grad():
                 model_out = self.model.embed(batch)
