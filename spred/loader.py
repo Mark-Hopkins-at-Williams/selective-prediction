@@ -60,7 +60,7 @@ class BalancedLoader(Loader):
         for batch in self.base_loader:
             rows_by_label = dict()
             lbls = batch['labels']
-            for value in lbls.unique().numpy():
+            for value in lbls.unique().cpu().numpy():
                 mask = lbls == value
                 row_indices = tensor(range(len(mask)))[mask]
                 rows_by_label[value] = list(row_indices.numpy())
