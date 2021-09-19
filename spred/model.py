@@ -96,7 +96,11 @@ class PretrainedTransformer(SelectiveModel):
     def embed(self, batch):
         """ For use by Trustscore. """
         self.model.train()
-        outputs = self.model(**(batch['inputs']), output_hidden_states=True)
+        try:
+            b = batch['inputs']
+        except:
+            pass
+        outputs = self.model(**b, output_hidden_states=True)
         t = outputs.hidden_states[-1]
         return {'outputs': t[:,0,:].detach()}
 
