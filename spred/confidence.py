@@ -118,7 +118,7 @@ def high_density_set(t, k, alpha):
 def group_by_label(batch):
     result = dict()
     lbls = batch['labels']
-    for value in lbls.unique().numpy():
+    for value in lbls.unique().cpu().numpy():
         mask = lbls == value
         row_indices = tensor(range(len(mask)))[mask]
         points = batch['inputs'][row_indices]
