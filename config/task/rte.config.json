@@ -14,6 +14,6 @@
     "name": "linear"
   },
   "bsz": 8,
-  "n_epochs": 3
+  "n_epochs": 6
 }
 
