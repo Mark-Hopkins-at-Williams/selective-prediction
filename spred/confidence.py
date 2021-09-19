@@ -107,7 +107,7 @@ def distance_to_set(pt, t):
 
 
 def high_density_set(t, k, alpha):
-    array = t.numpy().cpu()
+    array = t.cpu().numpy()
     nbrs = NearestNeighbors(n_neighbors=k, algorithm="ball_tree").fit(array)
     distances, _ = nbrs.kneighbors(array)
     sorted_radii = sorted(enumerate(distances[:, -1]), key=lambda x: x[1])
