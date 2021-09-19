@@ -2,16 +2,16 @@
   {
     "task": "rte",
     "training": "ce",
-    "n_trials": 1
+    "n_trials": 10
   },
   {
     "task": "rte",
     "training": "dac",
-    "n_trials": 1
+    "n_trials": 10
   },
   {
     "task": "rte",
     "training": "ereg",
-    "n_trials": 1
+    "n_trials": 10
   }
 ]
