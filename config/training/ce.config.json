@@ -4,6 +4,9 @@
   },
   "confidences": [
     {
+      "name": "posttrained"
+    },
+    {
       "name": "max_prob"
     },
     {

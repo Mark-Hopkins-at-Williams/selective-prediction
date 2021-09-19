@@ -204,6 +204,12 @@ class EvaluationResult:
         result = {key: median(merged[key]) for key in merged}
         return EvaluationResult(result)
 
+    @staticmethod
+    def all(list_of_results):
+        merged = EvaluationResult.merge(list_of_results)
+        result = {key: merged[key] for key in merged}
+        return EvaluationResult(result)
+
 class EpochResult:
 
     def __init__(self, epoch, train_loss, validation_result):
@@ -262,19 +268,23 @@ class EpochResult:
 
 class ExperimentResult:
 
-    def __init__(self, config, epoch_results):
+    def __init__(self, config, epoch_results, eval_results):
         self.config = config
         self.epoch_results = epoch_results
+        self.eval_results = eval_results
 
     def as_dict(self):
-        results_json = [result.as_dict() for result in self.epoch_results]
+        epoch_results_json = [result.as_dict() for result in self.epoch_results]
+        eval_results_json = [result.as_dict() for result in self.eval_results]
         return {'config': self.config,
-                'results': results_json}
+                'training_results': epoch_results_json,
+                'confidence_results': eval_results_json}
 
     @classmethod
     def from_dict(cls, d):
-        epoch_results = [EpochResult.from_dict(result) for result in d['results']]
-        return cls(d['config'], epoch_results)
+        epoch_results = [EpochResult.from_dict(result) for result in d['training_results']]
+        eval_results = [EvaluationResult(result) for result in d['confidence_results']]
+        return cls(d['config'], epoch_results, eval_results)
 
     def __str__(self):
         return json.dumps(self.as_dict(), indent=4, sort_keys=True)
@@ -299,17 +309,24 @@ class ResultDatabase:
                               for d in experiment_results]
         return cls(experiment_results)
 
-    def summary(self, combine_epoch_fn=EpochResult.median):
+    def summary(self, combine_epoch_fn=EpochResult.median, combine_eval_fn=EvaluationResult.all):
         exp_results = self.results
         grouped_epoch_results = defaultdict(list)
+        grouped_conf_results = [[] for _ in range(len(exp_results[0].eval_results))]
         for exp_result in exp_results:
             for epoch_result in exp_result.epoch_results:
                 grouped_epoch_results[epoch_result.epoch].append(epoch_result)
+            for j, eval_result in enumerate(exp_result.eval_results):
+                grouped_conf_results[j].append(eval_result)
+
         avg_epoch_results = []
         for (epoch, epoch_results) in grouped_epoch_results.items():
             avg_epoch_results.append((epoch, combine_epoch_fn(epoch_results)))
         avg_epoch_results = [r for (_, r) in sorted(avg_epoch_results)]
-        return ExperimentResult(exp_results[0].config, avg_epoch_results)
+        avg_conf_results = []
+        for conf_results in grouped_conf_results:
+            avg_conf_results.append(combine_eval_fn(conf_results))
+        return ExperimentResult(exp_results[0].config, avg_epoch_results, avg_conf_results)
 
 
 def show_training_dashboard(exp_result):
@@ -333,7 +350,7 @@ def show_training_dashboard(exp_result):
     plt.show()
 
 
-def plot_metric(exp_results, metric_name):
+def plot_training_metric(exp_results, metric_name):
     colors = iter(['red', 'orange', 'yellow', 'green', 'blue']*20)
     fig, ax = plt.subplots()
     fig.suptitle('Training Dashboard', fontsize='18')
@@ -349,10 +366,20 @@ def plot_metric(exp_results, metric_name):
     plt.show()
 
 
+def plot_evaluation_metric(all_exp_results, metric_name):
+    for name, exp_results in all_exp_results:
+        print(name)
+        results = [eval_result[metric_name] for eval_result in exp_results.eval_results]
+        conf_configs = exp_results.config['confidences']
+        for cconfig, result in zip(conf_configs, results):
+            print(cconfig)
+            print(result)
+
+
 def main(result_files, metric_name):
     result_dbs = [(file, ResultDatabase.load(file)) for file in result_files]
     avg_results = [(file, result_db.summary()) for (file, result_db) in result_dbs]
-    plot_metric(avg_results, metric_name)
+    plot_evaluation_metric(avg_results, metric_name)
 
 
 if __name__ == '__main__':

@@ -93,6 +93,13 @@ class PretrainedTransformer(SelectiveModel):
         outputs = self.model(**batch)
         return {'outputs': outputs.logits.detach(), 'loss': outputs.loss.detach()}
 
+    def embed(self, batch):
+        """ For use by Trustscore. """
+        self.model.train()
+        outputs = self.model(**batch, output_hidden_states=True)
+        t = outputs.hidden_states[-1]
+        return {'outputs': t[:,0,:].detach()}
+
     def forward(self, batch, compute_conf=True, compute_loss=True):
         outputs = self.model(**batch)
         if compute_conf:

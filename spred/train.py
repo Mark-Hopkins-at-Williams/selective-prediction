@@ -117,7 +117,7 @@ class BasicTrainer(Trainer):
         top_model = top_model.to(self.device)
         eval_result = self.validate_and_analyze(top_model, top_epoch)
         print(str(eval_result))
-        return top_model, ExperimentResult(self.config, epoch_results)
+        return top_model, epoch_results
 
     def epoch_step(self, model):
         running_loss = 0.

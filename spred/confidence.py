@@ -80,7 +80,7 @@ class PosttrainedConfidence:
         calib_trainer = BasicTrainer(config,
                                      BalancedLoader(CalibrationLoader(base_model, task.validation_loader)),
                                      BalancedLoader(CalibrationLoader(base_model, task.train_loader)),
-                                     compute_conf=False)
+                                     conf_fn=random_confidence)
         self.confidence_model, _ = calib_trainer()
 
     def __call__(self, batch, model=None):

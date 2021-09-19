@@ -11,7 +11,7 @@
   },
   {
     "task": "normals",
-    "training": "ereg_ce",
+    "training": "ce",
     "n_trials": 5
   },
   {
