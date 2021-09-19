@@ -1,16 +1,16 @@
 [
   {
-    "task": "normals",
+    "task": "rte",
     "training": "ce",
     "n_trials": 1
   },
   {
-    "task": "normals",
+    "task": "rte",
     "training": "dac",
     "n_trials": 1
   },
   {
-    "task": "normals",
+    "task": "rte",
     "training": "ereg",
     "n_trials": 1
   }
