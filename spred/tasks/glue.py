@@ -50,7 +50,7 @@ class GlueTaskFactory(TaskFactory):
         try:
             _ = self.train
         except AttributeError:
-            self.task_name = config['task']['name']
+            self.task_name = self.config['task']['name']
             self.task_to_keys = {
                 "cola": ("sentence", None),
                 "mnli": ("premise", "hypothesis"),
