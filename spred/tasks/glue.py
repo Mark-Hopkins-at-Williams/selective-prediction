@@ -67,7 +67,7 @@ class GlueTaskFactory(TaskFactory):
             raw_datasets = datasets.load_dataset('glue', self.task_name)
             self.tokenizer = tokenizer_cache.load(tokenizer)
             tokenized = raw_datasets.map(self.tokenize_function, batched=True)
-            obsolete_cols = [key for key in self.task_to_keys(self.task_name)
+            obsolete_cols = [key for key in self.task_to_keys[self.task_name]
                              if key is not None] + ["idx"]
             tokenized = tokenized.remove_columns(obsolete_cols)
             tokenized = tokenized.rename_column("label", "labels")
