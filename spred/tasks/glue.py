@@ -87,7 +87,7 @@ class GlueTaskFactory(TaskFactory):
                 self.output_size = 1
 
     def tokenize_function(self, examples):
-        key1, key2 = self.task_to_keys(self.task_name)
+        key1, key2 = self.task_to_keys[self.task_name]
         if key2 is not None:
             return self.tokenizer(examples[key1], examples[key2],
                                   padding="max_length", truncation=True)
