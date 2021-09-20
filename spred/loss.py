@@ -14,7 +14,7 @@ def init_loss_fn(config):
     return init_loss_fn_from_loss_config(loss_config, n_epochs)
 
 def init_loss_fn_from_loss_config(loss_config, n_epochs):
-    loss_lookup = {'crossentropy': CrossEntropyLoss,
+    loss_lookup = {'base': CrossEntropyLoss,
                    'ereg': LossWithErrorRegularization,
                    'conf1': AbstainingLoss,
                    'dac': DACLoss}

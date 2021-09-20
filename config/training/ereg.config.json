@@ -2,7 +2,7 @@
   "loss": {
     "name": "ereg",
     "base_loss": {
-      "name": "crossentropy"
+      "name": "base"
     },
     "confidence": {
       "name": "max_prob"
@@ -14,7 +14,10 @@
       "name": "max_prob"
     },
     {
-      "name": "mc_dropout"
+      "name": "mcdm"
+    },
+    {
+      "name": "mcdv"
     }
   ]
 }

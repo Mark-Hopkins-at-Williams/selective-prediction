@@ -15,12 +15,28 @@ def init_confidence_extractor(cconfig, config, task, model):
     name = cconfig['name']
     if name in confidence_extractor_lookup:
         return confidence_extractor_lookup[name]
-    elif name == 'mc_dropout':
-        return MCDropoutConfidence()
+    elif name == 'mcdm':
+        return MCDropoutConfidence(combo_id="mean")
+    elif name == 'mcdv':
+        return MCDropoutConfidence(combo_id="negvar")
     elif name == 'posttrained':
         return PosttrainedConfidence(task, config, model)
-    elif name == 'trustscore':
+    elif name == 'ts50':
+        return TrustScore(task.train_loader, model, k=10, alpha=.5)
+    elif name == 'ts25':
         return TrustScore(task.train_loader, model, k=10, alpha=.25)
+    elif name == 'ts12_5':
+        return TrustScore(task.train_loader, model, k=10, alpha=.125)
+    elif name == 'ts_s100':
+        return TrustScore(task.train_loader, model, k=10, alpha=.25, max_sample_size=100)
+    elif name == 'ts_s200':
+        return TrustScore(task.train_loader, model, k=10, alpha=.25, max_sample_size=200)
+    elif name == 'ts_s400':
+        return TrustScore(task.train_loader, model, k=10, alpha=.25, max_sample_size=400)
+    elif name == 'ts_s800':
+        return TrustScore(task.train_loader, model, k=10, alpha=.25, max_sample_size=800)
+    elif name == 'ts_s1600':
+        return TrustScore(task.train_loader, model, k=10, alpha=.25, max_sample_size=800)
     else:
         raise Exception('Confidence extractor not recognized: {}'.format(name))
 
@@ -56,11 +72,27 @@ def normals_gold_conf(batch, model=None):
     adjusted = torch.stack([adjusted[:,0] / 0.5, adjusted[:,1] / 0.1])
     return adjusted.sum(dim=0)
 
+class Confidence:
 
-class MCDropoutConfidence:
-    def __init__(self, n_forward_passes=30, combo_fn=torch.mean):
+    def __init__(self):
+        self.ident = None
+
+    def identifier(self):
+        return self.ident
+
+class MCDropoutConfidence(Confidence):
+    def __init__(self, combo_id, n_forward_passes=30):
+        super().__init__()
         self.n_forward_passes = n_forward_passes
-        self.combo_fn = combo_fn
+        self.combo_id = combo_id
+        if combo_id == 'mean':
+            self.combo_fn = lambda x: torch.mean(x, dim=0)
+            self.ident = "mcdm"
+        elif combo_id == 'negvar':
+            self.combo_fn = lambda x: -torch.var(x, dim=0)
+            self.ident = "mcdv"
+        else:
+            raise Exception('Combo function not recognized: {}'.format(combo_id))
 
     def __call__(self, batch, lite_model):
         output = batch['outputs']
@@ -71,17 +103,19 @@ class MCDropoutConfidence:
             dropout_output = softmax(model_out['outputs'])
             pred_probs.append(gold_values(dropout_output, preds))
         pred_probs = torch.stack(pred_probs)
-        confs = self.combo_fn(pred_probs, dim=0)
+        confs = self.combo_fn(pred_probs)
         return confs
 
 
-class PosttrainedConfidence:
+class PosttrainedConfidence(Confidence):
     def __init__(self, task, config, base_model):
+        super().__init__()
         calib_trainer = BasicTrainer(config,
                                      BalancedLoader(CalibrationLoader(base_model, task.validation_loader)),
                                      BalancedLoader(CalibrationLoader(base_model, task.train_loader)),
                                      conf_fn=random_confidence)
         self.confidence_model, _ = calib_trainer()
+        self.ident = "pt"
 
     def __call__(self, batch, model=None):
         self.confidence_model.eval()
@@ -132,11 +166,13 @@ def compute_high_density_sets(batch, k, alpha):
             for lbl in points_by_label}
 
 
-class TrustScore:
-    def __init__(self, train_loader, model, k, alpha):
+class TrustScore(Confidence):
+    def __init__(self, train_loader, model, k, alpha, max_sample_size=1000):
+        super().__init__()
         self.k = k
         self.alpha = alpha
         self.model = model
+        self.ident = "ts" + str(int(alpha*100))
         device = (torch.device("cuda") if torch.cuda.is_available()
                   else torch.device("cpu"))
         full_dataset = None
@@ -149,7 +185,7 @@ class TrustScore:
                          'labels': batch['labels']}
             if full_dataset is None:
                 full_dataset = embedding
-            elif len(full_dataset['inputs']) < 1000:
+            elif len(full_dataset['inputs']) < max_sample_size:
                 for key in full_dataset:
                     full_dataset[key] = torch.cat([full_dataset[key], embedding[key]])
         self.high_density_sets = compute_high_density_sets(full_dataset, k, alpha)

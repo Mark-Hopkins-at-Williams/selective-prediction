@@ -1,13 +1,19 @@
 {
   "loss": {
-    "name": "crossentropy"
+    "name": "base"
   },
   "confidences": [
     {
-      "name": "posttrained"
+      "name": "ts50"
     },
     {
-      "name": "trustscore"
+      "name": "ts25"
+    },
+    {
+      "name": "ts12_5"
+    },
+    {
+      "name": "posttrained"
     },
     {
       "name": "max_prob"
@@ -16,7 +22,10 @@
       "name": "random"
     },
     {
-      "name": "mc_dropout"
+      "name": "mcdm"
+    },
+    {
+      "name": "mcdv"
     }
   ]
 }

@@ -1,10 +1,22 @@
 {
   "loss": {
-    "name": "crossentropy"
+    "name": "base"
   },
   "confidences": [
     {
-      "name": "trustscore"
+      "name": "ts_s100"
+    },
+    {
+      "name": "ts_s200"
+    },
+    {
+      "name": "ts_s400"
+    },
+    {
+      "name": "ts_s800"
+    },
+    {
+      "name": "ts_s1600"
     }
   ]
 }

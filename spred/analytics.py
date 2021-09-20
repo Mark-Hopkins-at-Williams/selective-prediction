@@ -2,6 +2,8 @@ import os
 import sys
 from sklearn import metrics
 import numpy as np
+import pandas as pd
+import seaborn as sns
 from functools import reduce
 import matplotlib.pyplot as plt
 from matplotlib import rcParams, cm
@@ -302,11 +304,16 @@ class ResultDatabase:
             json.dump(jsonified, f, indent=4)
 
     @classmethod
-    def load(cls, filename):
-        with open(filename, 'r') as f:
-            experiment_results = json.load(f)
-        experiment_results = [ExperimentResult.from_dict(d)
-                              for d in experiment_results]
+    def load(cls, directory):
+        files = [os.path.join(directory, f)
+                 for f in os.listdir(directory)
+                 if f.endswith('.results.json')]
+        experiment_results = []
+        for filename in files:
+            with open(filename, 'r') as f:
+                file_results = [ExperimentResult.from_dict(d)
+                                for d in json.load(f)]
+                experiment_results += file_results
         return cls(experiment_results)
 
     def summary(self, combine_epoch_fn=EpochResult.median, combine_eval_fn=EvaluationResult.all):
@@ -327,6 +334,18 @@ class ResultDatabase:
         for conf_results in grouped_conf_results:
             avg_conf_results.append(combine_eval_fn(conf_results))
         return ExperimentResult(exp_results[0].config, avg_epoch_results, avg_conf_results)
+
+    def as_dataframe(self):
+        data = defaultdict(list)
+        for exp_result in self.results:
+            config = exp_result.config
+            loss = config['loss']['name']
+            for j, eval_result in enumerate(exp_result.eval_results):
+                data['method'].append(loss + "_" + config['confidences'][j]['name'])
+                for metric_name in eval_result.as_dict():
+                    data[metric_name].append(eval_result[metric_name])
+        return pd.DataFrame(data=dict(data))
+
 
 
 def show_training_dashboard(exp_result):
@@ -366,28 +385,22 @@ def plot_training_metric(exp_results, metric_name):
     plt.show()
 
 
-def plot_evaluation_metric(all_exp_results, metric_name):
-    for name, exp_results in all_exp_results:
-        print(name)
-        results = [eval_result[metric_name] for eval_result in exp_results.eval_results]
-        conf_configs = exp_results.config['confidences']
-        for cconfig, result in zip(conf_configs, results):
-            print(cconfig)
-            print(result)
+
+def plot_evaluation_metric(result_db, metric_name):
+    df = result_db.as_dataframe()
+    sns.set_theme(style="whitegrid")
+    sns.violinplot(y="method", x=metric_name, data=df, orient="h")
+    plt.gcf().subplots_adjust(left=0.35)
+    plt.show()
 
 
-def main(result_files, metric_name):
-    result_dbs = [(file, ResultDatabase.load(file)) for file in result_files]
-    avg_results = [(file, result_db.summary()) for (file, result_db) in result_dbs]
-    plot_evaluation_metric(avg_results, metric_name)
+def main(directory, metric_name):
+    result_db = ResultDatabase.load(directory)
+    plot_evaluation_metric(result_db, metric_name)
 
 
 if __name__ == '__main__':
     i = 1
-    directory = sys.argv[1]
+    direc = sys.argv[1]
     metric = sys.argv[2]
-    print(os.listdir(directory))
-    files = [os.path.join(directory, f)
-             for f in os.listdir(directory)
-             if f.endswith('.results.json')]
-    main(files, metric)
+    main(direc, metric)
