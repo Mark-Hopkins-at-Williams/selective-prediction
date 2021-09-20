@@ -44,24 +44,24 @@ class GlueTaskFactory(TaskFactory):
 
     def __init__(self, config):
         super().__init__(config)
-        self.task_name = config['task']['name']
-        self.task_to_keys = {
-            "cola": ("sentence", None),
-            "mnli": ("premise", "hypothesis"),
-            "mrpc": ("sentence1", "sentence2"),
-            "qnli": ("question", "sentence"),
-            "qqp": ("question1", "question2"),
-            "rte": ("sentence1", "sentence2"),
-            "sst2": ("sentence", None),
-            "stsb": ("sentence1", "sentence2"),
-            "wnli": ("sentence1", "sentence2"),
-        }
         self.initialize_datasets()
 
     def initialize_datasets(self):
         try:
             _ = self.train
         except AttributeError:
+            self.task_name = config['task']['name']
+            self.task_to_keys = {
+                "cola": ("sentence", None),
+                "mnli": ("premise", "hypothesis"),
+                "mrpc": ("sentence1", "sentence2"),
+                "qnli": ("question", "sentence"),
+                "qqp": ("question1", "question2"),
+                "rte": ("sentence1", "sentence2"),
+                "sst2": ("sentence", None),
+                "stsb": ("sentence1", "sentence2"),
+                "wnli": ("sentence1", "sentence2"),
+            }
             tokenizer = self.config['network']['base_model']
             self.bsz = self.config['bsz']
             raw_datasets = datasets.load_dataset('glue', self.task_name)
