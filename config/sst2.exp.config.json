@@ -1,17 +1,17 @@
 [
   {
     "task": "sst2",
-    "training": "sr",
-    "n_trials": 5
+    "training": "ce",
+    "n_trials": 10
   },
   {
     "task": "sst2",
-    "training": "ereg_ce",
-    "n_trials": 5
+    "training": "dac",
+    "n_trials": 10
   },
   {
     "task": "sst2",
-    "training": "random",
-    "n_trials": 5
+    "training": "ereg",
+    "n_trials": 10
   }
 ]

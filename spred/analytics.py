@@ -13,6 +13,8 @@ rcParams['font.family'] = 'sans-serif'
 rcParams['font.sans-serif'] = ['Tahoma', 'DejaVu Sans', 'Ubuntu Condensed']
 from collections import defaultdict
 from statistics import median
+from datasets import load_metric
+
 
 def harsh_sort(confidences, predictions):
     sorted_pairs = sorted(zip(confidences, predictions))
@@ -64,6 +66,15 @@ class Evaluator:
         self.n_correct = 0
         self.n_published = 0
         self.n_preds = len(predictions)
+        """
+        if task_name is not None:
+            main_metric_fn = load_metric("glue", task_name)
+        else:
+            main_metric_fn = load_metric("accuracy")
+        self.main_metric = main_metric_fn.compute(predictions=predictions, references=p.label_ids)
+        if len(result) > 1:
+            result["combined_score"] = np.mean(list(result.values())).item()
+        """
         self.ktau = kendalltau([pred['confidence'] for pred in predictions],
                                [int(pred['pred'] == pred['gold']) for pred in predictions])
         for result in predictions:

@@ -14,8 +14,10 @@ class Sst2Loader(Loader):
         raw_datasets = datasets.load_dataset('glue', 'sst2')
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer)
         tokenized_datasets = raw_datasets.map(self.tokenize_function, batched=True)
+
         tokenized_datasets = tokenized_datasets.remove_columns(["sentence", "idx"])
         tokenized_datasets = tokenized_datasets.rename_column("label", "labels")
+
         tokenized_datasets.set_format("torch")
         dataset = tokenized_datasets[split]
         shuffle = (split == "train")

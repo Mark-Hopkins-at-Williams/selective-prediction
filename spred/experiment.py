@@ -1,7 +1,7 @@
 import json
 from spred.tasks.mnist import MnistTaskFactory
 from spred.tasks.normals import NormalsTaskFactory
-from spred.tasks.cola import ColaTaskFactory
+from spred.tasks.glue import GlueTaskFactory
 from spred.tasks.sst2 import Sst2TaskFactory
 from spred.tasks.rte import RteTaskFactory
 from spred.analytics import ResultDatabase
@@ -11,10 +11,15 @@ from spred.analytics import ExperimentResult
 
 task_factories = {'mnist': MnistTaskFactory,
                   'normals': NormalsTaskFactory,
-                  'cola': ColaTaskFactory,
-                  'sst2': Sst2TaskFactory,
-                  'rte': RteTaskFactory}
-
+                  "cola": GlueTaskFactory,
+                  "mnli": GlueTaskFactory,
+                  "mrpc": GlueTaskFactory,
+                  "qnli": GlueTaskFactory,
+                  "qqp": GlueTaskFactory,
+                  "rte": GlueTaskFactory,
+                  "sst2": GlueTaskFactory,
+                  "stsb": GlueTaskFactory,
+                  "wnli": GlueTaskFactory}
 
 class Experiment:
 
