@@ -8,10 +8,10 @@ from spred.task import TaskFactory
 from spred.model import Feedforward
 
 
-DATA_DIR = os.getenv('SPRED_DATA').strip()
-MNIST_DIR = join(DATA_DIR, 'mnist')
-MNIST_TRAIN_DIR = join(MNIST_DIR, 'train')
-MNIST_TEST_DIR = join(MNIST_DIR, 'test')
+# DATA_DIR = os.getenv('SPRED_DATA').strip()
+# MNIST_DIR = join(DATA_DIR, 'mnist')
+# MNIST_TRAIN_DIR = join(MNIST_DIR, 'train')
+# MNIST_TEST_DIR = join(MNIST_DIR, 'test')
 
 def confuse_two(labels):
     labels = labels.clone()
