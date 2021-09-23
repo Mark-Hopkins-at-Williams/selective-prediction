@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from spred.analytics import Evaluator, ExperimentResult, EpochResult
+from spred.analytics import ExperimentResult, EpochResult
+from spred.evaluate import Evaluator
 from copy import deepcopy
 import torch
 from tqdm import tqdm
