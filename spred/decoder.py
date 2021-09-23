@@ -5,14 +5,14 @@ from datasets import load_metric
 from spred.analytics import Evaluator
 
 
-def validate_and_analyze(model, validation_loader, epoch=0, visualizer=None):
+def validate_and_analyze(model, validation_loader, epoch=0, visualizer=None, task_name=None):
     decoder = Decoder()
     model.eval()
     results = list(decoder(model, validation_loader))
     validation_loss = decoder.get_loss()
     if visualizer is not None:
         visualizer.visualize(epoch, validation_loader, results)
-    eval_result = Evaluator(results, validation_loss).get_result()
+    eval_result = Evaluator(results, validation_loss, task_name).get_result()
     return eval_result
 
 

@@ -1,7 +1,7 @@
 [
   {
-    "task": "sst2",
-    "training": "ce",
+    "task": "cola",
+    "training": "ereg",
     "n_trials": 1
   }
 ]

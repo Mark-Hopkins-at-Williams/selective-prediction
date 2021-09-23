@@ -1,11 +1,9 @@
 import unittest
 import numpy as np
 import json
-from spred.analytics import Evaluator, EvaluationResult, EpochResult
+from spred.evaluate import Evaluator
+from spred.analytics import EvaluationResult, EpochResult
 from spred.analytics import ExperimentResult, ResultDatabase
-from spred.analytics import kendall_tau_distance, harsh_sort
-from spred.analytics import relativized_kendall_tau_distance
-
 
 
 def compare(a1, a2, num_decimal_places=4):
@@ -26,60 +24,13 @@ class TestEvaluator(unittest.TestCase):
                        {'gold': 2, 'pred': 2, 'confidence': 0.7, 'abstain': False},
                        {'gold': 3, 'pred': 3, 'confidence': 0.9, 'abstain': False}]
 
-    def test_kendall_tau_distance(self):
-        assert kendall_tau_distance([1, 2, 3, 4, 5], [0, 0, 1, 1, 1]) == 0
-        assert kendall_tau_distance([1, 2, 3, 4, 5], [0, 1, 0, 1, 1]) == 1
-        assert kendall_tau_distance([1, 2, 3, 4, 5], [1, 0, 0, 1, 1]) == 2
-        assert kendall_tau_distance([1, 2, 3, 4, 5], [1, 0, 1, 0, 1]) == 3
-        assert kendall_tau_distance([1, 2, 3, 4, 5], [1, 1, 0, 0, 1]) == 4
-
-    def test_harsh_sort(self):
-        assert harsh_sort([1, 2, 3, 4, 5], [0, 0, 1, 1, 1]) == [0, 0, 1, 1, 1]
-        assert harsh_sort([3, 4, 5, 1, 2], [1, 1, 1, 0, 0]) == [0, 0, 1, 1, 1]
-        assert harsh_sort([1, 2, 2, 3, 5], [0, 0, 1, 1, 1]) == [0, 1, 0, 1, 1]
-        assert harsh_sort([2, 3, 5, 1, 2], [1, 1, 1, 0, 0]) == [0, 1, 0, 1, 1]
-        assert harsh_sort([2, 2, 2, 2, 2], [1, 1, 1, 0, 0]) == [1, 1, 1, 0, 0]
-
-    def test_kendall_tau_distance_ties(self):
-        assert kendall_tau_distance([1, 2, 2, 3, 5], [0, 0, 1, 1, 1]) == 1
-        assert kendall_tau_distance([1, 2, 2, 3, 5], [0, 1, 0, 1, 1]) == 1
-        assert kendall_tau_distance([2, 2, 2, 2, 2], [0, 1, 0, 1, 1]) == 6
-
-    def test_relativized_kendall_tau_distance(self):
-        assert relativized_kendall_tau_distance([1.4, 1.2, 1.3, 1.1], [0, 0, 1, 1]) == 0.75
-
-    def test_pr_curve(self):
-        evaluator = Evaluator(self.preds1)
-        precision, recall, auc = evaluator.pr_curve()
-        assert compare(precision, np.array([0.6, 0.75, 0.66666667, 1., 1., 1.]))
-        assert compare(recall, np.array([1., 1., 0.66666667, 0.66666667,
-                                         0.33333333, 0.]))
-        assert approx(auc, 0.9027777777777777)
-        
-    def test_roc_curve(self):
-        evaluator = Evaluator(self.preds1)
-        fpr, tpr, auc = evaluator.roc_curve()
-        assert compare(fpr, np.array([0., 0., 0., 0.5, 0.5, 1. ]))
-        assert compare(tpr, np.array([0., 0.33333333, 0.66666667, 
-                                      0.66666667, 1., 1. ]))
-        assert approx(auc, 0.8333333333333333)
-
-    def test_risk_coverage_curve(self):
-        evaluator = Evaluator(self.preds1)
-        coverage, risk, capacity = evaluator.risk_coverage_curve()
-        expected_risk = np.array([0.4, 0.25, 0.3333, 0., 0., 0.])
-        expected_coverage = np.array([1.0, 0.8, 0.6, 0.4, 0.2, 0.])
-        assert compare(expected_risk, risk)
-        assert compare(expected_coverage, coverage)
-        assert approx(capacity, 0.84333)
-
     def test_evaluation_result_serialization(self):
         evaluator = Evaluator(self.preds1)
         result = evaluator.get_result().as_dict()
         result = {k: round(result[k], 4) if result[k] is not None else None
                   for k in result}
         expected = {'validation_loss': None,
-                    'avg_err_conf': 0.3, 'avg_crr_conf': 0.6333,
+                    'avg_err_conf': 0.12, 'avg_crr_conf': 0.38,
                     'auroc': 0.8333,
                     'capacity': 0.8433, 'kendall_tau': 0.1667,
                     'accuracy': 0.6}
@@ -181,7 +132,6 @@ class TestEvaluator(unittest.TestCase):
         assert summarized.config == expected.config
         for x, y in zip(summarized.epoch_results, expected.epoch_results):
             close_enough_epoch_results(x,y)
-
 
 
 if __name__ == "__main__":
