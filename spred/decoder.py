@@ -2,7 +2,7 @@ import torch
 from torch.nn import functional
 from tqdm import tqdm
 from datasets import load_metric
-from spred.analytics import Evaluator
+from spred.evaluate import Evaluator
 
 
 def validate_and_analyze(model, validation_loader, epoch=0, visualizer=None, task_name=None):
