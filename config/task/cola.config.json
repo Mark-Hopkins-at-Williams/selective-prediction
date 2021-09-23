@@ -13,6 +13,6 @@
   "scheduler": {
     "name": "linear"
   },
-  "bsz": 16,
-  "n_epochs": 3
+  "bsz": 8,
+  "n_epochs": 6
 }
