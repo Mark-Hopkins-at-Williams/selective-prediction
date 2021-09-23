@@ -142,6 +142,7 @@ class BasicTrainer(Trainer):
         model.eval()
         results = list(self.decoder(model, self.validation_loader))
         validation_loss = self.decoder.get_loss()
-        eval_result = Evaluator(results, validation_loss).get_result()
+        eval_result = Evaluator(results, validation_loss,
+                                task_name=self.config['task']['name']).get_result()
         return eval_result
 
