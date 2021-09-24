@@ -1,16 +1,16 @@
 [
   {
-    "task": "mrpc",
+    "task": "qqp",
     "training": "ce",
     "n_trials": 10
   },
   {
-    "task": "mrpc",
+    "task": "qqp",
     "training": "dac",
     "n_trials": 10
   },
   {
-    "task": "mrpc",
+    "task": "qqp",
     "training": "ereg",
     "n_trials": 10
   }

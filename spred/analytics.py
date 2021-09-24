@@ -264,6 +264,23 @@ def example_pr_curve(conf="g1"):
     g.set(ylim=(-0.01, 1.01))
     g.set(xlim=(-0.01, 1.01))
 
+def example_pr_curve2(conf="g1"):
+    d = {'precision': [9/10, 8/9, 7/8, 6/7, 5/6, 4/5, 3/4, 2/3, 2/2, 1/1, 1,
+                       9/10, 9/9, 8/8, 7/7, 6/6, 5/5, 4/4, 3/3, 2/2, 1/1, 1,
+                       9/10, 8/9, 7/8, 6/7, 5/6, 4/5, 3/4, 2/3, 1/2, 0/1],
+         'recall': [9/9, 8/9, 7/9, 6/9, 5/9, 4/9, 3/9, 2/9, 2/9, 1/9, 0,
+                    9/9, 9/9, 8/9, 7/9, 6/9, 5/9, 4/9, 3/9, 2/9, 1/9, 0,
+                    9/9, 8/9, 7/9, 6/9, 5/9, 4/9, 3/9, 2/9, 1/9, 0/9],
+         'confidence': ['g1']*11 + ['g2']*11 + ['g3']*10 }
+    df = pd.DataFrame(data=d)
+    df1 = df[df["confidence"]==conf]
+    g = sns.FacetGrid(df1, hue="confidence", height=8)
+    # sns.set(font_scale=3)
+    g.map(plt.scatter, "recall", "precision")
+    g.map(plt.plot, "recall", "precision")
+    g.set(ylim=(-0.01, 1.01))
+    g.set(xlim=(-0.01, 1.01))
+
 def main(directory, metric_name):
     result_db = ResultDatabase.load(directory)
     plot_evaluation_metric(result_db, metric_name)
