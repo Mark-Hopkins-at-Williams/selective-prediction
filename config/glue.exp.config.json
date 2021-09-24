@@ -1,16 +1,16 @@
 [
   {
-    "task": "cola",
+    "task": "mrpc",
     "training": "ce",
     "n_trials": 10
   },
   {
-    "task": "cola",
+    "task": "mrpc",
     "training": "dac",
     "n_trials": 10
   },
   {
-    "task": "cola",
+    "task": "mrpc",
     "training": "ereg",
     "n_trials": 10
   }

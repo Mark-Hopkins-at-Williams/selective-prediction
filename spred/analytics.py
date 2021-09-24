@@ -240,7 +240,6 @@ def plot_training_metric(exp_results, metric_name):
     plt.show()
 
 
-
 def plot_evaluation_metric(result_db, metric_name):
     df = result_db.as_dataframe()
     sns.set_theme(style="whitegrid")
@@ -248,6 +247,22 @@ def plot_evaluation_metric(result_db, metric_name):
     plt.gcf().subplots_adjust(left=0.35)
     plt.show()
 
+def example_pr_curve(conf="g1"):
+    d = {'precision': [1, 1, 1, 1, 1, 4/5, 4/6, 4/7, 5/8, 5/9, 6/10,
+                       1, 1, 1, 1, 1, 1, 1, 6/7, 6/8, 6/9, 6/10,
+                       0, 0, 0, 0, 1/5, 2/6, 3/7, 4/8, 5/9, 6/10],
+         'recall': [0, 1/6, 2/6, 3/6, 4/6, 4/6, 4/6, 4/6, 5/6, 5/6, 1,
+                    0, 1/6, 2/6, 3/6, 4/6, 5/6, 1, 1, 1, 1, 1,
+                    0, 0, 0, 0, 1/6, 2/6, 3/6, 4/6, 5/6, 1],
+         'confidence': ['g1']*11 + ['g2']*11 + ['g3']*10 }
+    df = pd.DataFrame(data=d)
+    df1 = df[df["confidence"]==conf]
+    g = sns.FacetGrid(df1, hue="confidence", height=8)
+    sns.set(font_scale=3)
+    g.map(plt.scatter, "recall", "precision")
+    g.map(plt.plot, "recall", "precision")
+    g.set(ylim=(-0.01, 1.01))
+    g.set(xlim=(-0.01, 1.01))
 
 def main(directory, metric_name):
     result_db = ResultDatabase.load(directory)
