@@ -21,22 +21,8 @@ def init_confidence_extractor(cconfig, config, task, model):
         return MCDropoutConfidence(combo_id="negvar")
     elif name == 'posttrained':
         return PosttrainedConfidence(task, config, model)
-    elif name == 'ts50':
-        return TrustScore(task.train_loader, model, k=10, alpha=.5)
-    elif name == 'ts25':
-        return TrustScore(task.train_loader, model, k=10, alpha=.25)
-    elif name == 'ts12_5':
-        return TrustScore(task.train_loader, model, k=10, alpha=.125)
-    elif name == 'ts_s100':
-        return TrustScore(task.train_loader, model, k=10, alpha=.25, max_sample_size=100)
-    elif name == 'ts_s200':
-        return TrustScore(task.train_loader, model, k=10, alpha=.25, max_sample_size=200)
-    elif name == 'ts_s400':
-        return TrustScore(task.train_loader, model, k=10, alpha=.25, max_sample_size=400)
-    elif name == 'ts_s800':
-        return TrustScore(task.train_loader, model, k=10, alpha=.25, max_sample_size=800)
-    elif name == 'ts_s1600':
-        return TrustScore(task.train_loader, model, k=10, alpha=.25, max_sample_size=800)
+    elif name == 'ts':
+        return TrustScore(task.train_loader, model, k=10, alpha=cconfig['alpha'], max_sample_size=cconfig['max_sample_size'])
     else:
         raise Exception('Confidence extractor not recognized: {}'.format(name))
 
@@ -188,6 +174,8 @@ class TrustScore(Confidence):
             elif len(full_dataset['inputs']) < max_sample_size:
                 for key in full_dataset:
                     full_dataset[key] = torch.cat([full_dataset[key], embedding[key]])
+            else:
+                break
         self.high_density_sets = compute_high_density_sets(full_dataset, k, alpha)
 
     def __call__(self, batch, lite_model=None):

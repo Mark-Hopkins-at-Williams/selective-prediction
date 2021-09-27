@@ -1,0 +1,17 @@
+[
+  {
+    "task": "rte",
+    "training": "ts.hparams",
+    "n_trials": 5
+  },
+  {
+    "task": "mrpc",
+    "training": "ts.hparams",
+    "n_trials": 5
+  },
+  {
+    "task": "sst2",
+    "training": "ts.hparams",
+    "n_trials": 5
+  }
+]

@@ -5,32 +5,32 @@
   "confidences": [
     {
       "name": "ts",
-      "sample_size": 800,
+      "max_sample_size": 800,
       "alpha": 0.5
     },
     {
       "name": "ts",
-      "sample_size": 800,
+      "max_sample_size": 800,
       "alpha": 0.25
     },
     {
       "name": "ts",
-      "sample_size": 800,
+      "max_sample_size": 800,
       "alpha": 0.125
     },
     {
       "name": "ts",
-      "sample_size": 1600,
+      "max_sample_size": 1600,
       "alpha": 0.5
     },
     {
       "name": "ts",
-      "sample_size": 1600,
+      "max_sample_size": 1600,
       "alpha": 0.25
     },
     {
       "name": "ts",
-      "sample_size": 1600,
+      "max_sample_size": 1600,
       "alpha": 0.125
     }
   ]

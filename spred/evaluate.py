@@ -88,15 +88,18 @@ class Accuracy(EvaluationStatistic):
 class GlueMetric(EvaluationStatistic):
     def __init__(self, task_name):
         super().__init__()
+        self.use_glue = (task_name in {'cola', 'sst-2', 'mrpc', 'qqp', 'mnli',
+                                       'qnli', 'rte', 'wnli'})
         self.metric = None
-        if task_name is not None:
+        if self.use_glue:
             self.metric = load_metric("glue", task_name)
         self.preds = []
         self.labels = []
 
     def notify(self, pred):
-        self.preds.append(pred['pred'])
-        self.labels.append(pred['gold'])
+        if self.use_glue:
+            self.preds.append(pred['pred'])
+            self.labels.append(pred['gold'])
 
     def __call__(self):
         if len(self.preds) == 0 or self.metric is None:

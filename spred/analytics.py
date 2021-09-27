@@ -195,10 +195,13 @@ class ResultDatabase:
         for exp_result in self.results:
             config = exp_result.config
             loss = config['loss']['name']
+            task = config['task']['name']
             for j, eval_result in enumerate(exp_result.eval_results):
                 data['method'].append(loss + "_" + config['confidences'][j]['name'])
+                data['task'].append(task)
                 for metric_name in eval_result.as_dict():
-                    data[metric_name].append(eval_result[metric_name])
+                    if metric_name not in ['f1', 'matthews_correlation']:
+                        data[metric_name].append(eval_result[metric_name])
         return pd.DataFrame(data=dict(data))
 
 
@@ -247,6 +250,7 @@ def plot_evaluation_metric(result_db, metric_name):
     plt.gcf().subplots_adjust(left=0.35)
     plt.show()
 
+
 def example_pr_curve(conf="g1"):
     d = {'precision': [1, 1, 1, 1, 1, 4/5, 4/6, 4/7, 5/8, 5/9, 6/10,
                        1, 1, 1, 1, 1, 1, 1, 6/7, 6/8, 6/9, 6/10,
@@ -264,6 +268,7 @@ def example_pr_curve(conf="g1"):
     g.set(ylim=(-0.01, 1.01))
     g.set(xlim=(-0.01, 1.01))
 
+
 def example_pr_curve2(conf="g1"):
     d = {'precision': [9/10, 8/9, 7/8, 6/7, 5/6, 4/5, 3/4, 2/3, 2/2, 1/1, 1,
                        9/10, 9/9, 8/8, 7/7, 6/6, 5/5, 4/4, 3/3, 2/2, 1/1, 1,
@@ -280,6 +285,12 @@ def example_pr_curve2(conf="g1"):
     g.map(plt.plot, "recall", "precision")
     g.set(ylim=(-0.01, 1.01))
     g.set(xlim=(-0.01, 1.01))
+
+
+def get_dataframe(directory):
+    result_db = ResultDatabase.load(directory)
+    return result_db.as_dataframe()
+
 
 def main(directory, metric_name):
     result_db = ResultDatabase.load(directory)
