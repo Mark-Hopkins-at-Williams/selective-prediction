@@ -1,0 +1,62 @@
+[
+  {
+    "task": "rte",
+    "training": "ereg.l.5",
+    "n_trials": 5
+  },
+  {
+    "task": "rte",
+    "training": "ereg.l.1",
+    "n_trials": 5
+  },
+  {
+    "task": "rte",
+    "training": "ereg.l.05",
+    "n_trials": 5
+  },
+  {
+    "task": "rte",
+    "training": "ereg.l.01",
+    "n_trials": 5
+  },
+  {
+    "task": "mrpc",
+    "training": "ereg.l.5",
+    "n_trials": 5
+  },
+  {
+    "task": "mrpc",
+    "training": "ereg.l.1",
+    "n_trials": 5
+  },
+  {
+    "task": "mrpc",
+    "training": "ereg.l.05",
+    "n_trials": 5
+  },
+  {
+    "task": "mrpc",
+    "training": "ereg.l.01",
+    "n_trials": 5
+  },
+  {
+    "task": "sst2",
+    "training": "ereg.l.5",
+    "n_trials": 5
+  },
+  {
+    "task": "sst2",
+    "training": "ereg.l.1",
+    "n_trials": 5
+  },
+  {
+    "task": "sst2",
+    "training": "ereg.l.05",
+    "n_trials": 5
+  },
+  {
+    "task": "sst2",
+    "training": "ereg.l.01",
+    "n_trials": 5
+  }
+]

@@ -4,17 +4,11 @@
     "base_loss": {
       "name": "base"
     },
-    "lambda_param": 0.01
+    "lambda_param": 0.05
   },
   "confidences": [
     {
       "name": "max_prob"
-    },
-    {
-      "name": "mcdm"
-    },
-    {
-      "name": "mcdv"
     }
   ]
 }

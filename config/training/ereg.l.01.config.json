@@ -9,12 +9,6 @@
   "confidences": [
     {
       "name": "max_prob"
-    },
-    {
-      "name": "mcdm"
-    },
-    {
-      "name": "mcdv"
     }
   ]
 }
