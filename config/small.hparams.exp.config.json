@@ -1,0 +1,8 @@
+[
+  {
+    "task": "normals",
+    "training": "mcd.hparams",
+    "n_trials": 3,
+    "evaluation": "validation"
+  }
+]

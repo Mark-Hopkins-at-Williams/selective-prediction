@@ -24,6 +24,8 @@ class Trainer(ABC):
         self.train_loader = train_loader
         self.validation_loader = validation_loader
         self.n_epochs =  self.config['n_epochs']
+        if self.config['loss']['name'] == 'dac':
+            self.n_epochs += self.config['loss']['warmup_epochs']
         self.decoder = self.init_decoder()
         self.conf_fn = conf_fn
         self.device = (torch.device("cuda") if torch.cuda.is_available()

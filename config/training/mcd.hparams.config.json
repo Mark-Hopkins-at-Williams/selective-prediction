@@ -1,0 +1,38 @@
+{
+  "loss": {
+    "name": "base"
+  },
+  "confidences": [
+    {
+      "name": "mcd",
+      "aggregator": "mean",
+      "n_forward_passes": 10
+    },
+    {
+      "name": "mcd",
+      "aggregator": "mean",
+      "n_forward_passes": 30
+    },
+    {
+      "name": "mcd",
+      "aggregator": "mean",
+      "n_forward_passes": 50
+    },
+    {
+      "name": "mcd",
+      "aggregator": "negvar",
+      "n_forward_passes": 10
+    },
+    {
+      "name": "mcd",
+      "aggregator": "negvar",
+      "n_forward_passes": 30
+    },
+    {
+      "name": "mcd",
+      "aggregator": "negvar",
+      "n_forward_passes": 50
+    }
+  ]
+}
+

@@ -7,7 +7,7 @@ from spred.train import BasicTrainer
 from spred.loader import CalibrationLoader, BalancedLoader
 
 def init_confidence_extractor(cconfig, config, task, model):
-    confidence_extractor_lookup = {'inv_abstain': inv_abstain_prob,
+    confidence_extractor_lookup = {'sum_non_abstain': sum_nonabstain_prob,
                                    'max_non_abstain': max_nonabstain_prob,
                                    'max_prob': max_prob,
                                    'random': random_confidence,
@@ -15,10 +15,8 @@ def init_confidence_extractor(cconfig, config, task, model):
     name = cconfig['name']
     if name in confidence_extractor_lookup:
         return confidence_extractor_lookup[name]
-    elif name == 'mcdm':
-        return MCDropoutConfidence(combo_id="mean")
-    elif name == 'mcdv':
-        return MCDropoutConfidence(combo_id="negvar")
+    elif name == 'mcd':
+        return MCDropoutConfidence(combo_id=cconfig['aggregator'], n_forward_passes=cconfig['n_forward_passes'])
     elif name == 'posttrained':
         return PosttrainedConfidence(task, config, model)
     elif name == 'ts':
@@ -27,7 +25,7 @@ def init_confidence_extractor(cconfig, config, task, model):
         raise Exception('Confidence extractor not recognized: {}'.format(name))
 
 
-def inv_abstain_prob(batch, model=None):
+def sum_nonabstain_prob(batch, model=None):
     output = batch['outputs']
     probs = functional.softmax(output.clamp(min=-25, max=25), dim=-1)
     return 1.0 - probs[:, -1]
@@ -67,7 +65,7 @@ class Confidence:
         return self.ident
 
 class MCDropoutConfidence(Confidence):
-    def __init__(self, combo_id, n_forward_passes=30):
+    def __init__(self, combo_id, n_forward_passes):
         super().__init__()
         self.n_forward_passes = n_forward_passes
         self.combo_id = combo_id

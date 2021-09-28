@@ -1,19 +1,19 @@
 [
   {
     "task": "rte",
-    "training": "ts.hparams",
+    "training": "mcd.hparams",
     "n_trials": 5,
     "evaluation": "validation"
   },
   {
     "task": "mrpc",
-    "training": "ts.hparams",
+    "training": "mcd.hparams",
     "n_trials": 5,
     "evaluation": "validation"
   },
   {
     "task": "sst2",
-    "training": "ts.hparams",
+    "training": "mcd.hparams",
     "n_trials": 5,
     "evaluation": "validation"
   }

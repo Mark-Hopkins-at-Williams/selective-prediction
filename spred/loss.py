@@ -20,7 +20,7 @@ def init_loss_fn_from_loss_config(loss_config, n_epochs):
                    'dac': DACLoss}
     params = {k: v for k, v in loss_config.items() if k != 'name'}
     if loss_config['name'] == 'dac':
-        params['total_epochs'] = n_epochs
+        params['total_epochs'] = n_epochs + loss_config['warmup_epochs']
     elif loss_config['name'] == 'ereg':
         params['base_loss'] = init_loss_fn_from_loss_config(loss_config['base_loss'], n_epochs)
     return loss_lookup[loss_config['name']](**params)

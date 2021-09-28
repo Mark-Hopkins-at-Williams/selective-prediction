@@ -2,61 +2,73 @@
   {
     "task": "rte",
     "training": "ereg.l.5",
-    "n_trials": 5
+    "n_trials": 5,
+    "evaluation": "validation"
   },
   {
     "task": "rte",
     "training": "ereg.l.1",
-    "n_trials": 5
+    "n_trials": 5,
+    "evaluation": "validation"
   },
   {
     "task": "rte",
     "training": "ereg.l.05",
-    "n_trials": 5
+    "n_trials": 5,
+    "evaluation": "validation"
   },
   {
     "task": "rte",
     "training": "ereg.l.01",
-    "n_trials": 5
+    "n_trials": 5,
+    "evaluation": "validation"
   },
   {
     "task": "mrpc",
     "training": "ereg.l.5",
-    "n_trials": 5
+    "n_trials": 5,
+    "evaluation": "validation"
   },
   {
     "task": "mrpc",
     "training": "ereg.l.1",
-    "n_trials": 5
+    "n_trials": 5,
+    "evaluation": "validation"
   },
   {
     "task": "mrpc",
     "training": "ereg.l.05",
-    "n_trials": 5
+    "n_trials": 5,
+    "evaluation": "validation"
   },
   {
     "task": "mrpc",
     "training": "ereg.l.01",
-    "n_trials": 5
+    "n_trials": 5,
+    "evaluation": "validation"
   },
   {
     "task": "sst2",
     "training": "ereg.l.5",
-    "n_trials": 5
+    "n_trials": 5,
+    "evaluation": "validation"
   },
   {
     "task": "sst2",
     "training": "ereg.l.1",
-    "n_trials": 5
+    "n_trials": 5,
+    "evaluation": "validation"
   },
   {
     "task": "sst2",
     "training": "ereg.l.05",
-    "n_trials": 5
+    "n_trials": 5,
+    "evaluation": "validation"
   },
   {
     "task": "sst2",
     "training": "ereg.l.01",
-    "n_trials": 5
+    "n_trials": 5,
+    "evaluation": "validation"
   }
 ]

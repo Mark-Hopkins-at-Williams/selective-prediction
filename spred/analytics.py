@@ -206,7 +206,14 @@ class ResultDatabase:
 
 def get_conf_abbrev(cconfig):
     if cconfig['name'] == 'ts':
-        return 'ts.{}.{}'.format(cconfig['max_sample_size'], cconfig['alpha'])
+        return 'ts({}, {})'.format(cconfig['alpha'], cconfig['max_sample_size'])
+    elif cconfig['name'] == 'mcd':
+        if cconfig['aggregator'] == "mean":
+            return 'mcdm_{}'.format(cconfig['n_forward_passes'])
+        elif cconfig['aggregator'] == "negvar":
+            return 'mcdv_{}'.format(cconfig['n_forward_passes'])
+    else:
+        return cconfig['name']
 
 def get_loss_abbrev(lconfig):
     if lconfig['name'] == 'ereg':

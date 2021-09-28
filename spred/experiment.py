@@ -41,13 +41,16 @@ class Experiment:
                                                          self.task, None)
         trainer = self.task.trainer_factory(training_conf_fn)
         model, training_result = trainer()
-        test_loader = self.task.test_loader_factory()
+        if 'evaluation' in self.config and self.config['evaluation'] == 'validation':
+            eval_loader = self.task.validation_loader_factory()
+        else:
+            eval_loader = self.task.test_loader_factory()
         eval_results = []
         for confidence_config in self.config['confidences']:
             conf_fn = init_confidence_extractor(confidence_config, self.config,
                                                 self.task, model)
             model.set_confidence_extractor(conf_fn)
-            result = validate_and_analyze(model, test_loader, task_name=self.config['task']['name'])
+            result = validate_and_analyze(model, eval_loader, task_name=self.config['task']['name'])
             eval_results.append(result)
             print(confidence_config)
             print(result)

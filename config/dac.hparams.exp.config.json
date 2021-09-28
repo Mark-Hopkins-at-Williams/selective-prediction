@@ -1,0 +1,20 @@
+[
+  {
+    "task": "normals",
+    "training": "dac.w2",
+    "n_trials": 2,
+    "evaluation": "validation"
+  },
+  {
+    "task": "normals",
+    "training": "dac.w3",
+    "n_trials": 2,
+    "evaluation": "validation"
+  },
+  {
+    "task": "normals",
+    "training": "dac.w5",
+    "n_trials": 2,
+    "evaluation": "validation"
+  }
+]
