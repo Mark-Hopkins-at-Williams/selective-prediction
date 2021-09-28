@@ -58,7 +58,7 @@ class CrossEntropyLoss(ConfidenceLoss):
 
 class LossWithErrorRegularization(ConfidenceLoss):
 
-    def __init__(self, base_loss, lambda_param, confidence):
+    def __init__(self, base_loss, lambda_param):
         super().__init__()
         self.lambda_param = lambda_param
         self.base_loss = base_loss
@@ -72,11 +72,6 @@ class LossWithErrorRegularization(ConfidenceLoss):
         incorrect_confs = confidence[~truthvals]
         diffs = (incorrect_confs.unsqueeze(1) - correct_confs.unsqueeze(0)).view(-1)
         penalty = torch.sum(torch.clamp(diffs, min=0)**2)
-        # ALTERNATIVE USING LOGS
-        # correct_confs = -torch.log(confidence[truthvals])
-        # incorrect_confs = -torch.log(confidence[~truthvals])
-        # diffs = (correct_confs.unsqueeze(1) - incorrect_confs.unsqueeze(0)).view(-1)
-        # penalty = torch.mean(torch.clamp(diffs, min=0))
         return ce_loss + self.lambda_param * penalty
 
     def __str__(self):

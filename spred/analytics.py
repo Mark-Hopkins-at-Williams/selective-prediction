@@ -194,16 +194,25 @@ class ResultDatabase:
         data = defaultdict(list)
         for exp_result in self.results:
             config = exp_result.config
-            loss = config['loss']['name']
+            loss = get_loss_abbrev(config['loss'])
             task = config['task']['name']
             for j, eval_result in enumerate(exp_result.eval_results):
-                data['method'].append(loss + "_" + config['confidences'][j]['name'])
+                data['method'].append(loss + "_" + get_conf_abbrev(config['confidences'][j]))
                 data['task'].append(task)
                 for metric_name in eval_result.as_dict():
                     if metric_name not in ['f1', 'matthews_correlation']:
                         data[metric_name].append(eval_result[metric_name])
         return pd.DataFrame(data=dict(data))
 
+def get_conf_abbrev(cconfig):
+    if cconfig['name'] == 'ts':
+        return 'ts.{}.{}'.format(cconfig['max_sample_size'], cconfig['alpha'])
+
+def get_loss_abbrev(lconfig):
+    if lconfig['name'] == 'ereg':
+        return 'ereg.l.{}'.format(lconfig['lambda_param'])
+    else:
+        return lconfig['name']
 
 
 def show_training_dashboard(exp_result):
@@ -245,8 +254,9 @@ def plot_training_metric(exp_results, metric_name):
 
 def plot_evaluation_metric(result_db, metric_name):
     df = result_db.as_dataframe()
+    print(df)
     sns.set_theme(style="whitegrid")
-    sns.violinplot(y="method", x=metric_name, data=df, orient="h")
+    sns.violinplot(y="method", x=metric_name, hue="task", data=df, orient="h", inner="stick")
     plt.gcf().subplots_adjust(left=0.35)
     plt.show()
 

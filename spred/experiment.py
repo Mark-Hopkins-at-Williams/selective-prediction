@@ -36,7 +36,7 @@ class Experiment:
     def run(self):
         training_conf_fn = random_confidence
         if self.config['loss']['name'] == 'ereg':
-            confidence_config = self.config['loss']['confidence']
+            confidence_config = {'name': 'max_prob'}
             training_conf_fn = init_confidence_extractor(confidence_config, self.config,
                                                          self.task, None)
         trainer = self.task.trainer_factory(training_conf_fn)
