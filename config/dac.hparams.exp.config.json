@@ -1,20 +1,56 @@
 [
   {
-    "task": "normals",
+    "task": "rte",
     "training": "dac.w2",
-    "n_trials": 2,
+    "n_trials": 5,
     "evaluation": "validation"
   },
   {
-    "task": "normals",
+    "task": "rte",
     "training": "dac.w3",
-    "n_trials": 2,
+    "n_trials": 5,
     "evaluation": "validation"
   },
   {
-    "task": "normals",
+    "task": "rte",
     "training": "dac.w5",
-    "n_trials": 2,
+    "n_trials": 5,
+    "evaluation": "validation"
+  },
+  {
+    "task": "mrpc",
+    "training": "dac.w2",
+    "n_trials": 5,
+    "evaluation": "validation"
+  },
+  {
+    "task": "mrpc",
+    "training": "dac.w3",
+    "n_trials": 5,
+    "evaluation": "validation"
+  },
+  {
+    "task": "mrpc",
+    "training": "dac.w5",
+    "n_trials": 5,
+    "evaluation": "validation"
+  },
+  {
+    "task": "sst2",
+    "training": "dac.w2",
+    "n_trials": 5,
+    "evaluation": "validation"
+  },
+  {
+    "task": "sst2",
+    "training": "dac.w3",
+    "n_trials": 5,
+    "evaluation": "validation"
+  },
+  {
+    "task": "sst2",
+    "training": "dac.w5",
+    "n_trials": 5,
     "evaluation": "validation"
   }
 ]
