@@ -1,4 +1,5 @@
 {
+  "early_stopping_criterion": "aupr",
   "loss": {
     "name": "dac",
     "warmup_epochs": 2

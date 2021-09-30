@@ -209,9 +209,9 @@ def get_conf_abbrev(cconfig):
         return 'ts({}, {})'.format(cconfig['alpha'], cconfig['max_sample_size'])
     elif cconfig['name'] == 'mcd':
         if cconfig['aggregator'] == "mean":
-            return 'mcdm_{}'.format(cconfig['n_forward_passes'])
+            return 'mcdm({})'.format(cconfig['n_forward_passes'])
         elif cconfig['aggregator'] == "negvar":
-            return 'mcdv_{}'.format(cconfig['n_forward_passes'])
+            return 'mcdv({})'.format(cconfig['n_forward_passes'])
     else:
         return cconfig['name']
 

@@ -105,15 +105,18 @@ class BasicTrainer(Trainer):
         epoch_results = []
         top_epoch, top_state_dict = None, None
         top_validation_score = float('-inf')
+        es_criterion = "accuracy"
+        if "early_stopping_criterion" in self.config:
+            es_criterion = self.config['early_stopping_criterion']
         for e in range(1, self.n_epochs+1):
             batch_loss = self.epoch_step(model)
             eval_result = self.validate_and_analyze(model, e)
             epoch_result = EpochResult(e, batch_loss, eval_result)
             epoch_results.append(epoch_result)
             print(str(epoch_result))
-            if eval_result['accuracy'] > top_validation_score:
+            if eval_result[es_criterion] > top_validation_score: # TODO: what about criteria where smaller=better?
                 top_epoch, top_state_dict = e, deepcopy(model.state_dict())
-                top_validation_score = eval_result['accuracy']
+                top_validation_score = eval_result[es_criterion]
         print("Best validation accuracy at epoch {}".format(top_epoch))
         top_model = self.init_model()
         top_model.load_state_dict(top_state_dict)
