@@ -11,7 +11,8 @@ def init_model(model_config, output_size, conf_fn, loss_fn, include_abstain):
     if 'output_size' != params:
         params['output_size'] = output_size
     params['confidence_extractor'] = conf_fn
-    params['loss_f'] = loss_fn
+    if loss_fn is not None:
+        params['loss_f'] = loss_fn
     params['include_abstain'] = include_abstain
     model_constructor = model_lookup[architecture]
     return model_constructor(**params)
