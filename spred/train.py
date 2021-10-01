@@ -22,7 +22,9 @@ class BasicTrainer:
         self.validation_loader = validation_loader
         default_loss_fn = init_loss_fn(self.config['default_loss'], self.config['n_epochs'], default_loss_fn=None)
         self.loss_fn = init_loss_fn(self.config['loss'], self.config['n_epochs'], default_loss_fn=default_loss_fn)
-        self.n_epochs = self.config['n_epochs'] + self.loss_fn.bonus_epochs()
+        self.n_epochs = self.config['n_epochs']
+        if self.loss_fn is not None:
+            self.n_epochs += self.loss_fn.bonus_epochs()
         self.include_abstain = self.config['loss']['name'] in ['dac']
         self.decoder = self.init_decoder()
         self.conf_fn = conf_fn
