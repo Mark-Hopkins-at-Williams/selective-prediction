@@ -20,7 +20,8 @@ class BasicTrainer:
         self.scheduler = None
         self.train_loader = train_loader
         self.validation_loader = validation_loader
-        self.loss_fn = init_loss_fn(self.config['loss'], self.config['n_epochs'])
+        default_loss_fn = init_loss_fn(self.config['default_loss'], self.config['n_epochs'], default_loss_fn=None)
+        self.loss_fn = init_loss_fn(self.config['loss'], self.config['n_epochs'], default_loss_fn=default_loss_fn)
         self.n_epochs = self.config['n_epochs'] + self.loss_fn.bonus_epochs()
         self.include_abstain = self.config['loss']['name'] in ['dac']
         self.decoder = self.init_decoder()

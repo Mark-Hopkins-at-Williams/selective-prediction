@@ -13,6 +13,9 @@
   "scheduler": {
     "name": "linear"
   },
+  "default_loss": {
+    "name": "model"
+  },
   "bsz": 8,
   "n_epochs": 6
 }

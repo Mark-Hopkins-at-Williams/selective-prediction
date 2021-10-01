@@ -2,7 +2,7 @@
   "loss": {
     "name": "ereg",
     "base_loss": {
-      "name": "ce"
+      "name": "default"
     },
     "lambda_param": 0.01
   },
@@ -11,10 +11,14 @@
       "name": "max_prob"
     },
     {
-      "name": "mcdm"
+      "name": "mcd",
+      "aggregator": "mean",
+      "n_forward_passes": 30
     },
     {
-      "name": "mcdv"
+      "name": "mcd",
+      "aggregator": "negvar",
+      "n_forward_passes": 30
     }
   ]
 }

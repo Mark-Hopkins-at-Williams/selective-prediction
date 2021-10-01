@@ -17,6 +17,9 @@
     "lr": 0.003,
     "momentum": 0.9
   },
+  "default_loss": {
+    "name": "ce"
+  },
   "bsz": 64,
   "n_epochs": 50
 }

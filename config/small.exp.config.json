@@ -1,6 +1,11 @@
 [
   {
     "task": "normals",
+    "training": "ereg",
+    "n_trials": 1
+  },
+  {
+    "task": "normals",
     "training": "ce",
     "n_trials": 1
   }

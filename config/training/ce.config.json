@@ -1,6 +1,6 @@
 {
   "loss": {
-    "name": "ce"
+    "name": "default"
   },
   "confidences": [
     {

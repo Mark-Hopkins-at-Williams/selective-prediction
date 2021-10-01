@@ -9,7 +9,7 @@ from spred.util import renormalized_nonabstain_probs
 from spred.util import nonabstain_prob_mass, gold_values, softmax
 
 
-def init_loss_fn(loss_config, n_epochs):
+def init_loss_fn(loss_config, n_epochs, default_loss_fn):
     print(loss_config)
     loss_lookup = {'ce': CrossEntropyLoss,
                    'ereg': LossWithErrorRegularization,
@@ -19,8 +19,13 @@ def init_loss_fn(loss_config, n_epochs):
     if loss_config['name'] == 'dac':
         params['total_epochs'] = n_epochs + loss_config['warmup_epochs']
     elif loss_config['name'] == 'ereg':
-        params['base_loss'] = init_loss_fn(loss_config['base_loss'], n_epochs)
-    return loss_lookup[loss_config['name']](**params)
+        params['base_loss'] = init_loss_fn(loss_config['base_loss'], n_epochs, default_loss_fn)
+    if loss_config['name'] == 'model':
+        return None
+    elif loss_config['name'] == 'default':
+        return default_loss_fn
+    else:
+        return loss_lookup[loss_config['name']](**params)
 
 
 class ConfidenceLoss(torch.nn.Module, ABC):
