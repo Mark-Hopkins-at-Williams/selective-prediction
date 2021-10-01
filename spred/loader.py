@@ -14,10 +14,6 @@ class Loader(ABC):
         ...
 
     @abstractmethod
-    def input_size(self):
-        ...
-
-    @abstractmethod
     def output_size(self):
         ...
 
@@ -45,9 +41,6 @@ class CalibrationLoader(Loader):
     def __len__(self):
         return len(self.base_loader)
 
-    def input_size(self):
-        return self.base_loader.input_size()
-
     def output_size(self):
         return 2
 
@@ -74,12 +67,8 @@ class BalancedLoader(Loader):
                 balanced_batch[key] = batch[key][choices]
             yield balanced_batch
 
-
     def __len__(self):
         return len(self.base_loader)
-
-    def input_size(self):
-        return self.base_loader.input_size()
 
     def output_size(self):
         return self.base_loader.output_size()

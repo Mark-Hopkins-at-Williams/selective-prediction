@@ -7,7 +7,10 @@
     "n_test_batches": 100
   },
   "network": {
-    "architecture": "simple"
+    "architecture": "feedforward",
+    "input_size": 52,
+    "hidden_sizes": [128, 64],
+    "output_size": 2
   },
   "optimizer": {
     "name": "sgd",

@@ -59,7 +59,7 @@ def build_interface_a_net():
     net = Feedforward(input_size=2, hidden_sizes=[2, 2], output_size=2,
                       loss_f=CrossEntropyLoss(),
                       confidence_extractor=max_prob,
-                      include_abstain_output=False)
+                      include_abstain=False)
     set_ffn_params(net)
     net.eval()
     return net
@@ -69,7 +69,7 @@ def build_interface_b_net():
     net = Feedforward(input_size=2, hidden_sizes=[2, 2], output_size=2,
                       loss_f=CrossEntropyLoss(),
                       confidence_extractor=max_nonabstain_prob,
-                      include_abstain_output=True)
+                      include_abstain=True)
     set_ffn_params(net)
     net.eval()
     return net

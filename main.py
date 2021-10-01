@@ -5,13 +5,6 @@ import sys
 from spred.experiment import Experiment
 from spred.analytics import ResultDatabase, show_training_dashboard
 
-# MODELS_BASE_DIR = os.getenv('SPRED_MODELS').strip()
-# if not os.path.isdir(MODELS_BASE_DIR):
-#     os.mkdir(MODELS_BASE_DIR)
-# MODELS_DIR = os.path.join(MODELS_BASE_DIR, 'selective-prediction')
-# if not os.path.isdir(MODELS_DIR):
-#     os.mkdir(MODELS_DIR)
-
 def simple_command_line(arguments):
     task_config_id = arguments[1]
     train_config_id = arguments[2]
@@ -26,6 +19,7 @@ def simple_command_line(arguments):
     result_db.save(output_path)
     reloaded = ResultDatabase.load(output_path)
     show_training_dashboard(reloaded.results[0])
+
 
 def config_command_line(config_file, results_dir):
     with open(config_file, 'r') as f:

@@ -29,11 +29,10 @@ class TestEvaluator(unittest.TestCase):
         result = evaluator.get_result().as_dict()
         result = {k: round(result[k], 4) if result[k] is not None else None
                   for k in result}
-        expected = {'validation_loss': None,
-                    'avg_err_conf': 0.12, 'avg_crr_conf': 0.38,
-                    'auroc': 0.8333,
-                    'capacity': 0.8433, 'kendall_tau': 0.1667,
-                    'accuracy': 0.6}
+        expected = {'validation_loss': None, 'n_errors': 2, 'n_correct': 3,
+                    'n_published': 5, 'avg_crr_conf': 0.38, 'avg_err_conf': 0.12,
+                    'accuracy': 0.6, 'kendall_tau': 0.1667, 'capacity': 0.9083,
+                    'aupr': 0.9028, 'auroc': 0.8333}
         assert result == expected
         result2 = EvaluationResult(expected)
         assert result2.as_dict() == expected
@@ -92,46 +91,6 @@ class TestEvaluator(unittest.TestCase):
                                             'avg_crr_conf': 5.0, 'auroc': 6.0})
         expected = EpochResult(3.0, 2.0, avg_eval_result)
         assert avg == expected
-
-    def test_experiment_result_averaging(self):
-
-        def example_result(k):
-            epoch_results = []
-            validation_d1 = {'dev_loss': k + 1.2, 'kendall_tau': k + 0.4}
-            validation = EvaluationResult(validation_d1)
-            epoch_results.append(EpochResult(1, k + 0.6, validation))
-            validation_d2 = {'dev_loss': k + 0.6, 'kendall_tau': k + 0.2}
-            validation = EvaluationResult(validation_d2)
-            epoch_results.append(EpochResult(2, k + 0.7, validation))
-            return ExperimentResult({'key': 'just an example'}, epoch_results)
-
-        def expected_result():
-            epoch_results = []
-            validation = EvaluationResult({'dev_loss': 1.8, 'kendall_tau': 1.0})
-            epoch_results.append(EpochResult(1, 1.2, validation))
-            validation = EvaluationResult({'dev_loss': 1.2, 'kendall_tau': 0.8})
-            epoch_results.append(EpochResult(2, 1.3, validation))
-            return ExperimentResult({'key': 'just an example'}, epoch_results)
-
-        def close_enough_eval_results(res1, res2):
-            assert res1.keys() == res2.keys()
-            for key in res1.keys():
-                approx(res1[key], res2[key])
-
-        def close_enough_epoch_results(res1, res2):
-            res1 = res1.as_dict()
-            res2 = res2.as_dict()
-            assert res1['epoch'] == res2['epoch']
-            assert approx(res1['train_loss'], res2['train_loss'])
-            close_enough_eval_results(res1['validation_result'],
-                                      res2['validation_result'])
-
-        results = [example_result(0.4), example_result(0.6), example_result(0.8)]
-        summarized = ResultDatabase(results).summary()
-        expected = expected_result()
-        assert summarized.config == expected.config
-        for x, y in zip(summarized.epoch_results, expected.epoch_results):
-            close_enough_epoch_results(x,y)
 
 
 if __name__ == "__main__":

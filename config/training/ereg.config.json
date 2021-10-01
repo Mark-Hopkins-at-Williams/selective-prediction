@@ -2,7 +2,7 @@
   "loss": {
     "name": "ereg",
     "base_loss": {
-      "name": "base"
+      "name": "ce"
     },
     "lambda_param": 0.01
   },

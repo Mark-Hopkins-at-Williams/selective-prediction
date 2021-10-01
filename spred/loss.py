@@ -8,13 +8,10 @@ from spred.util import abstain_probs, nonabstain_probs
 from spred.util import renormalized_nonabstain_probs
 from spred.util import nonabstain_prob_mass, gold_values, softmax
 
-def init_loss_fn(config):
-    loss_config = config['loss']
-    n_epochs = config['n_epochs']
-    return init_loss_fn_from_loss_config(loss_config, n_epochs)
 
-def init_loss_fn_from_loss_config(loss_config, n_epochs):
-    loss_lookup = {'base': CrossEntropyLoss,
+def init_loss_fn(loss_config, n_epochs):
+    print(loss_config)
+    loss_lookup = {'ce': CrossEntropyLoss,
                    'ereg': LossWithErrorRegularization,
                    'conf1': AbstainingLoss,
                    'dac': DACLoss}
@@ -22,7 +19,7 @@ def init_loss_fn_from_loss_config(loss_config, n_epochs):
     if loss_config['name'] == 'dac':
         params['total_epochs'] = n_epochs + loss_config['warmup_epochs']
     elif loss_config['name'] == 'ereg':
-        params['base_loss'] = init_loss_fn_from_loss_config(loss_config['base_loss'], n_epochs)
+        params['base_loss'] = init_loss_fn(loss_config['base_loss'], n_epochs)
     return loss_lookup[loss_config['name']](**params)
 
 
@@ -36,6 +33,9 @@ class ConfidenceLoss(torch.nn.Module, ABC):
 
     def notify(self, epoch):
         pass
+
+    def bonus_epochs(self):
+        return 0
 
 
 class CrossEntropyLoss(ConfidenceLoss):
@@ -131,6 +131,9 @@ class DACLoss(ConfidenceLoss):
 
     def notify(self, epoch):
         self.epoch = epoch
+
+    def bonus_epochs(self):
+        return self.learn_epochs
 
     def __call__(self, batch):
         input_batch, target_batch = batch['outputs'], batch['labels']

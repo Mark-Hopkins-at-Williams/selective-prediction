@@ -5,12 +5,9 @@ import torch
 from torch import tensor, nn
 from spred.loader import Loader
 from spred.util import softmax, close_enough, approx
-from spred.confidence import inv_abstain_prob, max_nonabstain_prob
+from spred.confidence import sum_nonabstain_prob, max_nonabstain_prob
 from spred.confidence import max_prob, random_confidence
 from spred.confidence import MCDropoutConfidence, TrustScore
-from spred.confidence import k_nearest_neighbors, high_density_set
-from spred.confidence import group_by_label, compute_high_density_sets
-from spred.confidence import distance_to_set
 from test.examples import ExampleLoader
 
 
@@ -46,9 +43,9 @@ class ExampleModel(nn.Module):
 
 class TestConfidence(unittest.TestCase):
 
-    def test_inv_abstain_prob(self):
+    def test_sum_nonabstain_prob(self):
         batch = example_batch1()
-        conf = inv_abstain_prob(batch)
+        conf = sum_nonabstain_prob(batch)
         expected = tensor([1.0 - .6439, 1.0 - .0871])
         close_enough(conf, expected)
 
@@ -74,7 +71,7 @@ class TestConfidence(unittest.TestCase):
     def test_mc_dropout_mean(self):
         base_model = ExampleModel()
         conf_fn = MCDropoutConfidence(n_forward_passes=4,
-                                      combo_fn=torch.mean)
+                                      combo_id="mean")
         batch = example_batch1()
         expected = tensor([(0.7488 + 0.5377 + 0.3044 + 0.1397) / 4.0,
                            (0.9032 + 0.8694 + 0.7891 + 0.6308) / 4.0])
@@ -83,28 +80,16 @@ class TestConfidence(unittest.TestCase):
     def test_mc_dropout_variance(self):
         base_model = ExampleModel()
         conf_fn = MCDropoutConfidence(n_forward_passes=4,
-                                      combo_fn=torch.var)
+                                      combo_id="negvar")
         batch = example_batch1()
-        expected = tensor([numpy.var([0.7488, 0.5377, 0.3044, 0.1397], ddof=1),
-                           numpy.var([0.9032, 0.8694, 0.7891, 0.6308], ddof=1)]).float()
+        expected = tensor([-1 * numpy.var([0.7488, 0.5377, 0.3044, 0.1397], ddof=1),
+                           -1 * numpy.var([0.9032, 0.8694, 0.7891, 0.6308], ddof=1)]).float()
         close_enough(conf_fn(batch, base_model), expected)
-
-    def test_nearest_neighbors(self):
-        t = tensor([[-1, -1], [-2, -1], [-3, -2], [1, 1], [2, 1], [3, 2]])
-        expected = tensor([[0, 1], [1, 0], [2, 1], [3, 4], [4, 3], [5, 4]])
-        close_enough(k_nearest_neighbors(t, 2), expected)
-        expected = tensor([[0, 1, 2],
-                           [1, 0, 2],
-                           [2, 1, 0],
-                           [3, 4, 5],
-                           [4, 3, 5],
-                           [5, 4, 3]])
-        close_enough(k_nearest_neighbors(t, 3), expected)
 
     def test_high_density_set(self):
         t = tensor([[-1, -1], [-2, -1], [-3, -2], [1, 1], [2, 1], [3, 2]])
         expected = tensor([[-1, -1], [-2, -1], [1, 1], [2, 1]])
-        close_enough(high_density_set(t, 2, 0.33), expected)
+        close_enough(TrustScore.high_density_set(t, 2, 0.33), expected)
 
     def test_group_by_label(self):
         batch = {'inputs': tensor([[ 0.1019, -0.9391],
@@ -124,7 +109,7 @@ class TestConfidence(unittest.TestCase):
                                [ 0.4204, -1.8723]]),
                     2: tensor([[ 0.3892, -0.1612],
                                [-0.6994,  1.2889]])}
-        grouped = group_by_label(batch)
+        grouped = TrustScore.group_by_label(batch)
         assert grouped.keys() == expected.keys()
         close_enough(grouped[0], expected[0])
         close_enough(grouped[1], expected[1])
@@ -136,19 +121,26 @@ class TestConfidence(unittest.TestCase):
         batch = {'inputs': t,
                  'labels': tensor([1, 1, 1, 1, 1, 1,
                                    0, 0, 0, 0, 0, 0])}
-        hd_sets = compute_high_density_sets(batch, 2, 0.33)
+        hd_sets = TrustScore.compute_high_density_sets(batch, 2, 0.33)
         assert set(hd_sets.keys()) == {0,1}
         close_enough(hd_sets[0], tensor([[-3, -1], [-4, -1], [-1, 1], [0, 1]]))
         close_enough(hd_sets[1], tensor([[-1, -1], [-2, -1], [1, 1], [2, 1]]))
 
     def test_distance_to_set(self):
         t = tensor([[-1, -1], [-2, -1], [-3, -2], [1, 1], [2, 1], [3, 2]])
-        assert approx(distance_to_set(tensor([-1, -1]), t), 0.0)
-        assert approx(distance_to_set(tensor([3, 2]), t), 0.0)
-        assert approx(distance_to_set(tensor([4, 2]), t), 1.0)
-        assert approx(distance_to_set(tensor([5, 2]), t), 2.0)
+        assert approx(TrustScore.distance_to_set(tensor([-1, -1]), t), 0.0)
+        assert approx(TrustScore.distance_to_set(tensor([3, 2]), t), 0.0)
+        assert approx(TrustScore.distance_to_set(tensor([4, 2]), t), 1.0)
+        assert approx(TrustScore.distance_to_set(tensor([5, 2]), t), 2.0)
 
     def test_trustscore1(self):
+        class TrivialEmbedder:
+            def embed(self, x):
+                return {'outputs': x['inputs']}
+
+            def eval(self):
+                pass
+
         batch1 = {'inputs': tensor([[-1, -1], [-2, -1], [-3, -2], [1, 1], [2, 1], [5, 6]]),
                   'labels': tensor([1, 1, 1, 1, 1, 1])}
         batch2 = {'inputs': tensor([[-3, -1], [-4, -1], [-5, -2], [-1, 1], [0, 1], [7, 6]]),
@@ -160,48 +152,13 @@ class TestConfidence(unittest.TestCase):
                                         [3., 0.],
                                         [0., 5.]])}
         train_loader = ExampleLoader([batch1, batch2], output_size=2)
-        score = TrustScore(train_loader, 2, 0.0)
+        score = TrustScore(train_loader, TrivialEmbedder(), 2, 0.0)
         close_enough(score(model_out), tensor([1., 3., .3333]).double())
         train_loader = ExampleLoader([batch1, batch2], output_size=2)
-        score = TrustScore(train_loader, 2, 0.33)
-        # close_enough(score(model_out), tensor([1.6125, 2.2361]).double())
+        score = TrustScore(train_loader, TrivialEmbedder(), 2, 0.33)
+        close_enough(score(model_out), tensor([0.8198, 0.8279, 1.2079]).double())
 
-    """
-    def test_trustscore2(self):
-        batch1 = {'inputs': tensor([[-1, -1], [-2, -1], [-3, -2], [1, 1], [2, 1], [3, 2]]),
-                  'labels': tensor([1, 1, 1, 1, 1, 1])}
-        batch2 = {'inputs': tensor([[-3, -1], [-4, -1], [-5, -2], [-1, 1], [0, 1], [1, 2]]),
-                  'labels': tensor([0, 0, 0, 0, 0, 0])}
-        model_out = {'inputs': tensor([[5.0, 2.0],
-                                       [-4.0, -2.0]]),
-                     'outputs': tensor([[-1., -2.],
-                                        [0., 3.]])}
-        train_loader = ExampleLoader([batch1, batch2], output_size=2)
-        score = TrustScore(train_loader, 2, 0.0)
-        close_enough(score(model_out), tensor([2., 1.]).double())
-        train_loader = ExampleLoader([batch1, batch2], output_size=2)
-        score = TrustScore(train_loader, 2, 0.33)
-        close_enough(score(model_out), tensor([1.6125, 2.2361]).double())
-    """
 
-    """
-    def test_trustscore3(self):
-        t = tensor([[-1, -1], [-2, -1], [-3, -2], [1, 1], [2, 1], [3, 2],
-                    [-3, -1], [-4, -1], [-5, -2], [-1, 1], [0, 1], [1, 2],
-                    [50, 20], [52, 20], [50, 21], [53, 20], [50, 25]])
-        train_batch = {'inputs': t,
-                       'labels': tensor([2, 2, 2, 2, 2, 2,
-                                         0, 0, 0, 0, 0, 0,
-                                         1, 1, 1, 1, 1])}
-        model_out = {'inputs': tensor([[5.0, 2.0],
-                                       [-4.0, -2.0]]),
-                     'outputs': tensor([[-1., -2., 0.],
-                                        [3., 0., 1.]])}
-        score = TrustScore(train_batch, 2, 0.0)
-        close_enough(score(model_out), tensor([2., 1.]).double())
-        score = TrustScore(train_batch, 2, 0.33)
-        close_enough(score(model_out), tensor([1.6125, 2.2361]).double())
-    """
 
 if __name__ == "__main__":
     unittest.main()

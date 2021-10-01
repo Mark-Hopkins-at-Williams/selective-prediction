@@ -197,7 +197,8 @@ class ResultDatabase:
             loss = get_loss_abbrev(config['loss'])
             task = config['task']['name']
             for j, eval_result in enumerate(exp_result.eval_results):
-                data['method'].append(loss + "_" + get_conf_abbrev(config['confidences'][j]))
+                conf_abbrev = get_conf_abbrev(config['confidences'][j])
+                data['method'].append(loss + "_" + conf_abbrev)
                 data['task'].append(task)
                 for metric_name in eval_result.as_dict():
                     if metric_name not in ['f1', 'matthews_correlation']:
@@ -217,7 +218,9 @@ def get_conf_abbrev(cconfig):
 
 def get_loss_abbrev(lconfig):
     if lconfig['name'] == 'ereg':
-        return 'ereg.l.{}'.format(lconfig['lambda_param'])
+        return 'ereg({})'.format(lconfig['lambda_param'])
+    elif lconfig['name'] == 'dac':
+        return 'dac({})'.format(lconfig['warmup_epochs'])
     else:
         return lconfig['name']
 

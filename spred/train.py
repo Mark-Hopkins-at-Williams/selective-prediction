@@ -1,12 +1,10 @@
-from abc import ABC, abstractmethod
 from spred.analytics import ExperimentResult, EpochResult
 from spred.evaluate import Evaluator
 from copy import deepcopy
 import torch
 from tqdm import tqdm
 from spred.loader import CalibrationLoader
-from spred.model import Feedforward
-from spred.model import PretrainedTransformer
+from spred.model import init_model
 from spred.decoder import Decoder
 import torch.optim as optim
 from transformers import AdamW
@@ -14,50 +12,30 @@ from transformers import get_scheduler
 from spred.loss import init_loss_fn
 
 
-class Trainer(ABC):
+class BasicTrainer:
 
     def __init__(self, config, train_loader, validation_loader, conf_fn):
         self.config = config
-        self.include_abstain = self.config['loss']['name'] in ['dac']
         self.optimizer = None
         self.scheduler = None
         self.train_loader = train_loader
         self.validation_loader = validation_loader
-        self.n_epochs =  self.config['n_epochs']
-        if self.config['loss']['name'] == 'dac':
-            self.n_epochs += self.config['loss']['warmup_epochs']
+        self.loss_fn = init_loss_fn(self.config['loss'], self.config['n_epochs'])
+        self.n_epochs = self.config['n_epochs'] + self.loss_fn.bonus_epochs()
+        self.include_abstain = self.config['loss']['name'] in ['dac']
         self.decoder = self.init_decoder()
         self.conf_fn = conf_fn
         self.device = (torch.device("cuda") if torch.cuda.is_available()
                        else torch.device("cpu"))
 
-
     def init_decoder(self):
         return Decoder(self.include_abstain)
 
     def init_model(self, output_size=None):
-        model_lookup = {'simple': Feedforward,
-                        'pretrained': PretrainedTransformer}
-        architecture = self.config['network']['architecture']
         if output_size is None:
             output_size = self.train_loader.output_size()
-        model_constructor = model_lookup[architecture]
-        if architecture in {"simple"}:
-            return model_constructor(
-                input_size=self.train_loader.input_size(),  # FIX THIS API!
-                hidden_sizes=(128, 64),
-                output_size=output_size,
-                confidence_extractor=self.conf_fn,
-                loss_f = init_loss_fn(self.config),
-                include_abstain_output = self.include_abstain
-            )
-        else:
-            return model_constructor(
-                base_model=self.config['network']['base_model'],
-                output_size=output_size,
-                confidence_extractor=self.conf_fn,
-                include_abstain_output = self.include_abstain
-            )
+        return init_model(self.config['network'], output_size, self.conf_fn,
+                          self.loss_fn, self.include_abstain)
 
     def init_optimizer_and_scheduler(self, model):
         def init_optimizer():
@@ -72,7 +50,6 @@ class Trainer(ABC):
             try:
                 scheduler_name = self.config['scheduler']['name']
             except KeyError:
-                print("*** WARNING: NO SCHEDULER PROVIDED ***")
                 scheduler_name = None
             if scheduler_name == 'dac':
                 self.scheduler = optim.lr_scheduler.MultiStepLR(self.optimizer,
@@ -90,12 +67,6 @@ class Trainer(ABC):
         init_optimizer()
         init_scheduler()
 
-
-class BasicTrainer(Trainer):
-    
-    def __init__(self, config, train_loader, validation_loader, conf_fn):
-       super().__init__(config, train_loader, validation_loader, conf_fn)
-
     def __call__(self):
         print("Training with config:")
         print(self.config)
@@ -110,7 +81,7 @@ class BasicTrainer(Trainer):
             es_criterion = self.config['early_stopping_criterion']
         for e in range(1, self.n_epochs+1):
             batch_loss = self.epoch_step(model)
-            eval_result = self.validate_and_analyze(model, e)
+            eval_result = self.validate_and_analyze(model)
             epoch_result = EpochResult(e, batch_loss, eval_result)
             epoch_results.append(epoch_result)
             print(str(epoch_result))
@@ -121,7 +92,7 @@ class BasicTrainer(Trainer):
         top_model = self.init_model()
         top_model.load_state_dict(top_state_dict)
         top_model = top_model.to(self.device)
-        eval_result = self.validate_and_analyze(top_model, top_epoch)
+        eval_result = self.validate_and_analyze(top_model)
         print(str(eval_result))
         return top_model, epoch_results
 
@@ -143,7 +114,7 @@ class BasicTrainer(Trainer):
             denom += 1
         return running_loss / denom
 
-    def validate_and_analyze(self, model, epoch):
+    def validate_and_analyze(self, model):
         model.eval()
         results = list(self.decoder(model, self.validation_loader))
         validation_loss = self.decoder.get_loss()

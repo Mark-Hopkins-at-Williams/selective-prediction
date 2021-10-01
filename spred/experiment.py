@@ -18,7 +18,6 @@ task_factories = {'mnist': MnistTaskFactory,
                   "qqp": GlueTaskFactory,
                   "rte": GlueTaskFactory,
                   "sst2": GlueTaskFactory,
-                  "stsb": GlueTaskFactory,
                   "wnli": GlueTaskFactory}
 
 class Experiment:

@@ -7,3 +7,4 @@ results/
 *_pycache_*
 spred/mnist/data/
 spred/mnist/saved/
+docs/.ipynb_checkpoints

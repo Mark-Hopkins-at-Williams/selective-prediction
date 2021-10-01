@@ -1,6 +1,6 @@
 [
   {
-    "task": "normals",
+    "task": "rte",
     "training": "ce",
     "n_trials": 1
   }

@@ -6,9 +6,9 @@ from spred.loss import CrossEntropyLoss
 from spred.model import Feedforward
 from spred.util import softmax, close_enough
 from torch.nn import functional
-from spred.confidence import lookup_confidence_extractor
-from test.model_examples import build_interface_a_net, build_interface_b_net
-from test.model_examples import ExampleFeedforwardLoader
+from spred.confidence import max_prob
+from test.examples import build_interface_a_net, build_interface_b_net
+from test.examples import ExampleFeedforwardLoader
 
 def example_batch1():
     inputs = tensor([[-1., -2., 0, 3, -1.5],
@@ -21,7 +21,6 @@ def example_batch1():
 class TestModel(unittest.TestCase):
 
     def test_feedforward(self):
-        max_prob = lookup_confidence_extractor('max_prob')
         model = Feedforward(input_size=5, hidden_sizes=(7, 7), output_size=3,
                             loss_f=CrossEntropyLoss(),
                             confidence_extractor=max_prob)

@@ -10,8 +10,7 @@ def init_confidence_extractor(cconfig, config, task, model):
     confidence_extractor_lookup = {'sum_non_abstain': sum_nonabstain_prob,
                                    'max_non_abstain': max_nonabstain_prob,
                                    'max_prob': max_prob,
-                                   'random': random_confidence,
-                                   'normals_gold': normals_gold_conf}
+                                   'random': random_confidence}
     name = cconfig['name']
     if name in confidence_extractor_lookup:
         return confidence_extractor_lookup[name]
@@ -47,14 +46,6 @@ def random_confidence(batch, model=None):
     output = batch['outputs']
     return torch.rand(output.shape[0])
 
-
-def normals_gold_conf(batch, model=None):
-    # TRY AGAIN: this isn't the gold confidence for normals
-    inputs = batch['inputs']['inputs']
-    inputs = inputs[:,:2]
-    adjusted = inputs**2
-    adjusted = torch.stack([adjusted[:,0] / 0.5, adjusted[:,1] / 0.1])
-    return adjusted.sum(dim=0)
 
 class Confidence:
 
@@ -110,46 +101,6 @@ class PosttrainedConfidence(Confidence):
         return confs
 
 
-def k_nearest_neighbors(t, k):
-    array = t.numpy()
-    nbrs = NearestNeighbors(n_neighbors=k, algorithm="ball_tree").fit(array)
-    _, indices = nbrs.kneighbors(array)
-    return torch.tensor(indices)
-
-
-def distance_to_set(pt, t):
-    array = torch.cat([pt.unsqueeze(dim=0), t]).cpu().numpy()
-    nbrs = NearestNeighbors(n_neighbors=2, algorithm="ball_tree").fit(array)
-    distances, _ = nbrs.kneighbors(array)
-    return distances[0, -1]
-
-
-def high_density_set(t, k, alpha):
-    array = t.cpu().numpy()
-    nbrs = NearestNeighbors(n_neighbors=k, algorithm="ball_tree").fit(array)
-    distances, _ = nbrs.kneighbors(array)
-    sorted_radii = sorted(enumerate(distances[:, -1]), key=lambda x: x[1])
-    point_indices = sorted([pt for (pt, _) in sorted_radii][:int((1.-alpha) * len(sorted_radii))])
-    return t[point_indices]
-
-
-def group_by_label(batch):
-    result = dict()
-    lbls = batch['labels']
-    for value in lbls.unique().cpu().numpy():
-        mask = lbls == value
-        row_indices = tensor(range(len(mask)))[mask]
-        points = batch['inputs'][row_indices]
-        result[value] = points
-    return result
-
-
-def compute_high_density_sets(batch, k, alpha):
-    points_by_label = group_by_label(batch)
-    return {lbl: high_density_set(points_by_label[lbl], k, alpha)
-            for lbl in points_by_label}
-
-
 class TrustScore(Confidence):
     def __init__(self, train_loader, model, k, alpha, max_sample_size=1000):
         super().__init__()
@@ -174,7 +125,40 @@ class TrustScore(Confidence):
                     full_dataset[key] = torch.cat([full_dataset[key], embedding[key]])
             else:
                 break
-        self.high_density_sets = compute_high_density_sets(full_dataset, k, alpha)
+        self.high_density_sets = TrustScore.compute_high_density_sets(full_dataset, k, alpha)
+
+    @staticmethod
+    def distance_to_set(pt, t):
+        array = torch.cat([pt.unsqueeze(dim=0), t]).cpu().numpy()
+        nbrs = NearestNeighbors(n_neighbors=2, algorithm="ball_tree").fit(array)
+        distances, _ = nbrs.kneighbors(array)
+        return distances[0, -1]
+
+    @staticmethod
+    def high_density_set(t, k, alpha):
+        array = t.cpu().numpy()
+        nbrs = NearestNeighbors(n_neighbors=k, algorithm="ball_tree").fit(array)
+        distances, _ = nbrs.kneighbors(array)
+        sorted_radii = sorted(enumerate(distances[:, -1]), key=lambda x: x[1])
+        point_indices = sorted([pt for (pt, _) in sorted_radii][:int((1. - alpha) * len(sorted_radii))])
+        return t[point_indices]
+
+    @staticmethod
+    def group_by_label(batch):
+        result = dict()
+        lbls = batch['labels']
+        for value in lbls.unique().cpu().numpy():
+            mask = lbls == value
+            row_indices = tensor(range(len(mask)))[mask]
+            points = batch['inputs'][row_indices]
+            result[value] = points
+        return result
+
+    @staticmethod
+    def compute_high_density_sets(batch, k, alpha):
+        points_by_label = TrustScore.group_by_label(batch)
+        return {lbl: TrustScore.high_density_set(points_by_label[lbl], k, alpha)
+                for lbl in points_by_label}
 
     def __call__(self, batch, lite_model=None):
         output = batch['outputs']
@@ -184,10 +168,11 @@ class TrustScore(Confidence):
         preds = torch.max(output, dim=1).indices
         confidences = []
         for i, point in enumerate(model_out['outputs']):
-            dists = {key: distance_to_set(point, self.high_density_sets[key])
+            dists = {key: TrustScore.distance_to_set(point, self.high_density_sets[key])
                      for key in self.high_density_sets}
             dist_to_pred_class = max(0.00000001, dists[preds[i].item()])
             other_dists = [dists[key] for key in dists if key != preds[i].item()]
             next_closest_dist = min(other_dists)
             confidences.append(next_closest_dist / dist_to_pred_class)
         return tensor(confidences)
+

@@ -1,31 +1,13 @@
 {
   "loss": {
-    "name": "base"
+    "name": "ce"
   },
   "confidences": [
-    {
-      "name": "ts50"
-    },
-    {
-      "name": "ts25"
-    },
-    {
-      "name": "ts12_5"
-    },
-    {
-      "name": "posttrained"
-    },
     {
       "name": "max_prob"
     },
     {
       "name": "random"
-    },
-    {
-      "name": "mcdm"
-    },
-    {
-      "name": "mcdv"
     }
   ]
 }

@@ -1,5 +1,21 @@
 from torch import nn
 from transformers import AutoModelForSequenceClassification
+from spred.loss import init_loss_fn
+
+
+def init_model(model_config, output_size, conf_fn, loss_fn, include_abstain):
+    model_lookup = {'feedforward': Feedforward,
+                    'pretrained': PretrainedTransformer}
+    architecture = model_config['architecture']
+    params = {k: model_config[k] for k in model_config if k != 'architecture'}
+    if 'output_size' != params:
+        params['output_size'] = output_size
+    params['confidence_extractor'] = conf_fn
+    params['loss_f'] = loss_fn
+    params['include_abstain'] = include_abstain
+    model_constructor = model_lookup[architecture]
+    return model_constructor(**params)
+
 
 class SelectiveModel(nn.Module):
 
@@ -18,10 +34,10 @@ class SelectiveModel(nn.Module):
 class Feedforward(SelectiveModel):
 
     def __init__(self, input_size, hidden_sizes, output_size,
-                 loss_f, confidence_extractor, include_abstain_output=False):
+                 loss_f, confidence_extractor, include_abstain=False):
         super().__init__()
         self.input_size = input_size
-        self.output_size = output_size + 1 if include_abstain_output else output_size
+        self.output_size = output_size + 1 if include_abstain else output_size
         self.confidence_extractor = confidence_extractor
         self.dropout = nn.Dropout(p=0.5)
         self.linears = nn.ModuleList([])
@@ -81,9 +97,9 @@ class Feedforward(SelectiveModel):
 class PretrainedTransformer(SelectiveModel):
 
     def __init__(self, base_model, confidence_extractor, output_size,
-                 include_abstain_output=False):
+                 include_abstain=False):
         super().__init__()
-        self.output_size = output_size + 1 if include_abstain_output else output_size
+        self.output_size = output_size + 1 if include_abstain else output_size
         self.model = AutoModelForSequenceClassification.from_pretrained(base_model, num_labels=self.output_size)
         self.confidence_extractor = confidence_extractor
 
@@ -108,7 +124,7 @@ class PretrainedTransformer(SelectiveModel):
         outputs = self.model(**batch)
         if compute_conf:
             confidence = self.confidence_extractor({'inputs': batch,
-                                                    'outputs': outputs.logits}, self.lite_forward)  # TODO: should we clone and detach?
+                                                    'outputs': outputs.logits}, self.lite_forward)
         else:
             confidence = None
         if compute_loss:

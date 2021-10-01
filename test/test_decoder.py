@@ -5,8 +5,8 @@ from spred.model import Feedforward
 from spred.confidence import max_nonabstain_prob
 from spred.decoder import Decoder
 from spred.util import close_enough
-from test.model_examples import build_interface_a_net, build_interface_b_net
-from test.model_examples import ExampleFeedforwardLoader
+from test.examples import build_interface_a_net, build_interface_b_net
+from test.examples import ExampleFeedforwardLoader
 
 
 class TestDecoder(unittest.TestCase):
