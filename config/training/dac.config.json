@@ -1,7 +1,7 @@
 {
   "regularizer": {
     "name": "dac",
-    "warmup_epochs": 20
+    "warmup_epochs": 2
   },
   "confidences": [
     {
