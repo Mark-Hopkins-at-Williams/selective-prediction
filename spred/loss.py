@@ -104,15 +104,15 @@ class DACLoss(ConfidenceLoss):
     epsilon = 1e-7
 
     def __init__(self, warmup_epochs, total_epochs,
-                 use_cuda=False, cuda_device=None,
                  alpha_final=1.0, alpha_init_factor=64.):
         super(ConfidenceLoss, self).__init__()
         self.learn_epochs = warmup_epochs
         self.total_epochs = total_epochs
         self.alpha_final = alpha_final
         self.alpha_init_factor = alpha_init_factor
-        self.use_cuda = use_cuda
-        self.cuda_device = cuda_device
+        self.cuda_device = (torch.device("cuda") if torch.cuda.is_available()
+                            else torch.device("cpu"))
+        self.use_cuda = torch.cuda.is_available()
         self.alpha_var = None
         self.alpha_thresh_ewma = None   #exponentially weighted moving average for alpha_thresh
         self.alpha_thresh = None #instantaneous alpha_thresh
