@@ -1,0 +1,16 @@
+{
+  "loss": {
+    "name": "ce"
+  },
+  "confidences": [
+    {
+      "name": "mcd",
+      "aggregator": "mean",
+      "n_forward_passes": 30
+    },
+    {
+      "name": "max_prob"
+    }
+  ]
+}
+

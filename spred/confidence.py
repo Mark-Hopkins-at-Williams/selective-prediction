@@ -70,12 +70,13 @@ class MCDropoutConfidence(Confidence):
         else:
             raise Exception('Combo function not recognized: {}'.format(combo_id))
 
-    def __call__(self, batch, lite_model):
+    def __call__(self, batch, model):
         output = batch['outputs']
         preds = torch.max(output, dim=1).indices
         pred_probs = []
+        batch = {k: batch[k] for k in batch if batch != output}
         for _ in range(self.n_forward_passes):
-            model_out = lite_model(batch['inputs'])
+            model_out = model(batch)
             dropout_output = softmax(model_out['outputs'])
             pred_probs.append(gold_values(dropout_output, preds))
         pred_probs = torch.stack(pred_probs)
