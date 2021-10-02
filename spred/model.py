@@ -3,19 +3,24 @@ from transformers import AutoModelForSequenceClassification
 from spred.loss import init_loss_fn
 
 
-def init_model(model_config, output_size, conf_fn, loss_fn, include_abstain):
+def init_model(model_config, output_size, conf_fn, regularizer, include_abstain):
     model_lookup = {'feedforward': Feedforward,
                     'pretrained': PretrainedTransformer}
     architecture = model_config['architecture']
-    params = {k: model_config[k] for k in model_config if k != 'architecture'}
+    params = {k: model_config[k] for k in model_config
+              if k not in ['architecture', 'loss']}
     if 'output_size' != params:
         params['output_size'] = output_size
     params['confidence_extractor'] = conf_fn
-    if loss_fn is not None:
-        params['loss_f'] = loss_fn
+    if 'loss' in model_config:
+        params['loss_f'] = init_loss_fn(model_config['loss'])
     params['include_abstain'] = include_abstain
     model_constructor = model_lookup[architecture]
-    return model_constructor(**params)
+    base_model = model_constructor(**params)
+    if regularizer is not None:
+        return RegularizedModel(base_model, regularizer)
+    else:
+        return base_model
 
 
 class SelectiveModel(nn.Module):
@@ -133,4 +138,23 @@ class PretrainedTransformer(SelectiveModel):
                     'confidences': confidence}
         else:
             return {'outputs': outputs.logits, 'confidences': confidence}
+
+
+class RegularizedModel(SelectiveModel):
+
+    def __init__(self, base_model, regularizer):
+        super().__init__()
+        self.base_model = base_model
+        self.regularizer = regularizer
+
+    def forward(self, batch, compute_conf=True):
+        model_out = self.base_model.forward(batch, compute_conf, compute_loss=True)
+        model_out['labels'] = batch['labels']
+        regularized_loss = self.regularizer(model_out)
+        model_out['loss'] = regularized_loss
+        return model_out
+
+    def notify(self, epoch):
+        self.epoch = epoch
+        self.regularizer.notify(epoch)
 

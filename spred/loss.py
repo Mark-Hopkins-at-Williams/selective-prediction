@@ -9,23 +9,20 @@ from spred.util import renormalized_nonabstain_probs
 from spred.util import nonabstain_prob_mass, gold_values, softmax
 
 
-def init_loss_fn(loss_config, n_epochs, default_loss_fn):
-    print(loss_config)
-    loss_lookup = {'ce': CrossEntropyLoss,
-                   'ereg': LossWithErrorRegularization,
-                   'conf1': AbstainingLoss,
-                   'dac': DACLoss}
+def init_loss_fn(loss_config):
+    loss_lookup = {'ce': CrossEntropyLoss}
     params = {k: v for k, v in loss_config.items() if k != 'name'}
-    if loss_config['name'] == 'dac':
-        params['total_epochs'] = n_epochs + loss_config['warmup_epochs']
-    elif loss_config['name'] == 'ereg':
-        params['base_loss'] = init_loss_fn(loss_config['base_loss'], n_epochs, default_loss_fn)
-    if loss_config['name'] == 'model':
-        return None
-    elif loss_config['name'] == 'default':
-        return default_loss_fn
-    else:
-        return loss_lookup[loss_config['name']](**params)
+    return loss_lookup[loss_config['name']](**params)
+
+
+def init_regularizer(rconfig, n_epochs):
+    regularizer_lookup = {'ereg': ErrorRegularizer,
+                          'dac': DACLoss,
+                          'conf1': AbstainingLoss}
+    params = {k: v for k, v in rconfig.items() if k != 'name'}
+    if rconfig['name'] == 'dac':
+        params['total_epochs'] = n_epochs + rconfig['warmup_epochs']
+    return regularizer_lookup[rconfig['name']](**params)
 
 
 class ConfidenceLoss(torch.nn.Module, ABC):
@@ -42,6 +39,9 @@ class ConfidenceLoss(torch.nn.Module, ABC):
     def bonus_epochs(self):
         return 0
 
+    def include_abstain(self):
+        return False
+
 
 class CrossEntropyLoss(ConfidenceLoss):
     """
@@ -57,30 +57,23 @@ class CrossEntropyLoss(ConfidenceLoss):
     def __call__(self, batch):
         return self.loss(batch['outputs'], batch['labels'])
 
-    def __str__(self):
-        return "CrossEntropyLoss"
 
+class ErrorRegularizer(ConfidenceLoss):
 
-class LossWithErrorRegularization(ConfidenceLoss):
-
-    def __init__(self, base_loss, lambda_param):
+    def __init__(self, lambda_param):
         super().__init__()
         self.lambda_param = lambda_param
-        self.base_loss = base_loss
 
     def __call__(self, batch):
-        output, gold, confidence = batch['outputs'], batch['labels'], batch['confidences']
-        ce_loss = self.base_loss(batch)
+        output, gold = batch['outputs'], batch['labels']
+        confidence, base_loss = batch['confidences'], batch['loss']
         probs = softmax(output)
         truthvals = (probs.max(dim=1).indices == gold)
         correct_confs = confidence[truthvals]
         incorrect_confs = confidence[~truthvals]
         diffs = (incorrect_confs.unsqueeze(1) - correct_confs.unsqueeze(0)).view(-1)
         penalty = torch.sum(torch.clamp(diffs, min=0)**2)
-        return ce_loss + self.lambda_param * penalty
-
-    def __str__(self):
-        return "LossWithErrorRegularization"
+        return base_loss + self.lambda_param * penalty
 
 
 class AbstainingLoss(ConfidenceLoss):
@@ -104,9 +97,6 @@ class AbstainingLoss(ConfidenceLoss):
         losses = label_ps + (self.alpha * abstains)
         losses = torch.clamp(losses, min=0.000000001)
         return -torch.mean(torch.log(losses))
-
-    def __str__(self):
-        return "AbstainingLoss_target_alpha_" + str(self.target_alpha)
 
 
 class DACLoss(ConfidenceLoss):
@@ -140,6 +130,9 @@ class DACLoss(ConfidenceLoss):
     def bonus_epochs(self):
         return self.learn_epochs
 
+    def include_abstain(self):
+        return True
+
     def __call__(self, batch):
         input_batch, target_batch = batch['outputs'], batch['labels']
         if self.epoch <= self.learn_epochs or not self.in_training:
@@ -171,10 +164,10 @@ class DACLoss(ConfidenceLoss):
             # take log(1 - p_out_abstain) later.
             if self.use_cuda:
                 p_out_abstain = torch.min(p_out_abstain,
-                    Variable(torch.Tensor([1. - epsilon])).cuda(self.cuda_device))
+                    Variable(torch.Tensor([1. - DACLoss.epsilon])).cuda(self.cuda_device))
             else:
                 p_out_abstain = torch.min(p_out_abstain,
-                    Variable(torch.Tensor([1. - epsilon])))
+                    Variable(torch.Tensor([1. - DACLoss.epsilon])))
 
             #update instantaneous alpha_thresh
             self.alpha_thresh = Variable(((1. - p_out_abstain)*h_c).mean().data)
@@ -193,8 +186,8 @@ class DACLoss(ConfidenceLoss):
                     #makes self.alpha_var a leaf variable, which will not be differentiated.
                     #aggressive initialization of alpha to jump start abstention
                     self.alpha_var = Variable(self.alpha_thresh_ewma.data /self.alpha_init_factor)
-                    self.alpha_inc = (self.alpha_final - self.alpha_var.data)/(self.total_epochs - epoch)
-                    self.alpha_set_epoch = epoch
+                    self.alpha_inc = (self.alpha_final - self.alpha_var.data)/(self.total_epochs - self.epoch)
+                    self.alpha_set_epoch = self.epoch
 
                 else:
                     # we only update alpha every epoch

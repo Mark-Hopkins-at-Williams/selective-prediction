@@ -194,7 +194,7 @@ class ResultDatabase:
         data = defaultdict(list)
         for exp_result in self.results:
             config = exp_result.config
-            loss = get_loss_abbrev(config['loss'])
+            loss = get_loss_abbrev(config)
             task = config['task']['name']
             for j, eval_result in enumerate(exp_result.eval_results):
                 conf_abbrev = get_conf_abbrev(config['confidences'][j])
@@ -216,13 +216,17 @@ def get_conf_abbrev(cconfig):
     else:
         return cconfig['name']
 
-def get_loss_abbrev(lconfig):
-    if lconfig['name'] == 'ereg':
-        return 'ereg({})'.format(lconfig['lambda_param'])
-    elif lconfig['name'] == 'dac':
-        return 'dac({})'.format(lconfig['warmup_epochs'])
+def get_loss_abbrev(config):
+    if 'regularizer' not in config:
+        return 'base'
     else:
-        return lconfig['name']
+        lconfig = config['regularizer']
+        if lconfig['name'] == 'ereg':
+            return 'ereg({})'.format(lconfig['lambda_param'])
+        elif lconfig['name'] == 'dac':
+            return 'dac({})'.format(lconfig['warmup_epochs'])
+        else:
+            return None
 
 
 def show_training_dashboard(exp_result):

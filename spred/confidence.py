@@ -55,6 +55,7 @@ class Confidence:
     def identifier(self):
         return self.ident
 
+
 class MCDropoutConfidence(Confidence):
     def __init__(self, combo_id, n_forward_passes):
         super().__init__()

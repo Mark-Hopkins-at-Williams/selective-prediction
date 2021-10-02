@@ -8,6 +8,21 @@
     },
     {
       "name": "random"
+    },
+    {
+      "name": "ts",
+      "max_sample_size": 800,
+      "alpha": 0.25
+    },
+    {
+      "name": "mcd",
+      "aggregator": "mean",
+      "n_forward_passes": 30
+    },
+    {
+      "name": "mcd",
+      "aggregator": "negvar",
+      "n_forward_passes": 30
     }
   ]
 }

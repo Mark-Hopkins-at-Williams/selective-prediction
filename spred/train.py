@@ -9,7 +9,7 @@ from spred.decoder import Decoder
 import torch.optim as optim
 from transformers import AdamW
 from transformers import get_scheduler
-from spred.loss import init_loss_fn
+from spred.loss import init_regularizer
 
 
 class BasicTrainer:
@@ -20,12 +20,14 @@ class BasicTrainer:
         self.scheduler = None
         self.train_loader = train_loader
         self.validation_loader = validation_loader
-        default_loss_fn = init_loss_fn(self.config['default_loss'], self.config['n_epochs'], default_loss_fn=None)
-        self.loss_fn = init_loss_fn(self.config['loss'], self.config['n_epochs'], default_loss_fn=default_loss_fn)
         self.n_epochs = self.config['n_epochs']
-        if self.loss_fn is not None:
-            self.n_epochs += self.loss_fn.bonus_epochs()
-        self.include_abstain = self.config['loss']['name'] in ['dac']
+        self.regularizer = None
+        self.include_abstain = False
+        if 'regularizer' in self.config:
+            self.regularizer = init_regularizer(self.config['regularizer'], self.n_epochs)
+        if self.regularizer is not None:
+            self.n_epochs += self.regularizer.bonus_epochs()
+            self.include_abstain = self.regularizer.include_abstain()
         self.decoder = self.init_decoder()
         self.conf_fn = conf_fn
         self.device = (torch.device("cuda") if torch.cuda.is_available()
@@ -38,7 +40,7 @@ class BasicTrainer:
         if output_size is None:
             output_size = self.train_loader.output_size()
         return init_model(self.config['network'], output_size, self.conf_fn,
-                          self.loss_fn, self.include_abstain)
+                          self.regularizer, self.include_abstain)
 
     def init_optimizer_and_scheduler(self, model):
         def init_optimizer():
@@ -83,6 +85,7 @@ class BasicTrainer:
         if "early_stopping_criterion" in self.config:
             es_criterion = self.config['early_stopping_criterion']
         for e in range(1, self.n_epochs+1):
+            model.notify(e)
             batch_loss = self.epoch_step(model)
             eval_result = self.validate_and_analyze(model)
             epoch_result = EpochResult(e, batch_loss, eval_result)

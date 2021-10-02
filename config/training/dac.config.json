@@ -1,7 +1,7 @@
 {
-  "loss": {
+  "regularizer": {
     "name": "dac",
-    "warmup_epochs": 2
+    "warmup_epochs": 20
   },
   "confidences": [
     {

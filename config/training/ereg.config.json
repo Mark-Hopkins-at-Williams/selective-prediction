@@ -1,9 +1,6 @@
 {
-  "loss": {
+  "regularizer": {
     "name": "ereg",
-    "base_loss": {
-      "name": "default"
-    },
     "lambda_param": 0.01
   },
   "confidences": [

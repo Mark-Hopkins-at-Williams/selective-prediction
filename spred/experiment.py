@@ -34,14 +34,15 @@ class Experiment:
 
     def run(self):
         training_conf_fn = random_confidence
-        if self.config['loss']['name'] == 'ereg':
-            confidence_config = {'name': 'max_prob'}
-            training_conf_fn = init_confidence_extractor(confidence_config, self.config,
-                                                         self.task, None)
-        elif self.config['loss']['name'] == 'dac':
-            confidence_config = {'name': 'max_non_abstain'}
-            training_conf_fn = init_confidence_extractor(confidence_config, self.config,
-                                                         self.task, None)
+        if 'regularizer' in self.config:
+            if self.config['regularizer']['name'] == 'ereg':
+                confidence_config = {'name': 'max_prob'}
+                training_conf_fn = init_confidence_extractor(confidence_config, self.config,
+                                                             self.task, None)
+            elif self.config['regularizer']['name'] == 'dac':
+                confidence_config = {'name': 'max_non_abstain'}
+                training_conf_fn = init_confidence_extractor(confidence_config, self.config,
+                                                             self.task, None)
         trainer = self.task.trainer_factory(training_conf_fn)
         model, training_result = trainer()
         if 'evaluation' in self.config and self.config['evaluation'] == 'validation':
