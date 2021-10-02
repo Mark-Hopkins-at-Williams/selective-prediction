@@ -84,25 +84,6 @@ class MCDropoutConfidence(Confidence):
         return confs
 
 
-class PosttrainedConfidence(Confidence):
-    def __init__(self, task, config, base_model):
-        super().__init__()
-        calib_trainer = BasicTrainer(config,
-                                     BalancedLoader(CalibrationLoader(base_model, task.validation_loader)),
-                                     BalancedLoader(CalibrationLoader(base_model, task.train_loader)),
-                                     conf_fn=random_confidence)
-        self.confidence_model, _ = calib_trainer()
-        self.ident = "pt"
-
-    def __call__(self, batch, model=None):
-        self.confidence_model.eval()
-        with torch.no_grad():
-            calibrator_out = self.confidence_model.lite_forward(batch['inputs'])
-            dists = softmax(calibrator_out['outputs'])
-            confs = dists[:, -1]
-        return confs
-
-
 class TrustScore(Confidence):
     def __init__(self, train_loader, model, k, alpha, max_sample_size=1000):
         super().__init__()
@@ -178,3 +159,21 @@ class TrustScore(Confidence):
             confidences.append(next_closest_dist / dist_to_pred_class)
         return tensor(confidences)
 
+
+class PosttrainedConfidence(Confidence):
+    def __init__(self, task, config, base_model):
+        super().__init__()
+        calib_trainer = BasicTrainer(config,
+                                     BalancedLoader(CalibrationLoader(base_model, task.validation_loader)),
+                                     BalancedLoader(CalibrationLoader(base_model, task.train_loader)),
+                                     conf_fn=random_confidence)
+        self.confidence_model, _ = calib_trainer()
+        self.ident = "pt"
+
+    def __call__(self, batch, model=None):
+        self.confidence_model.eval()
+        with torch.no_grad():
+            calibrator_out = self.confidence_model.lite_forward(batch['inputs'])
+            dists = softmax(calibrator_out['outputs'])
+            confs = dists[:, -1]
+        return confs

@@ -1,7 +1,6 @@
 from torch import nn
 from transformers import AutoModelForSequenceClassification
 from spred.loss import init_loss_fn
-from abc import ABC, abstractmethod
 
 
 def init_model(model_config, output_size, conf_fn, regularizer, include_abstain):
@@ -36,16 +35,6 @@ class SelectiveModel(nn.Module):
 
     def notify(self, epoch):
         self.epoch = epoch
-
-    def lite_forward(self, batch):
-        """ For use by MC Dropout. """
-        self.train()
-        return self.forward(batch, compute_conf=False, compute_loss=False)
-
-    @abstractmethod
-    def embed(self, batch):
-        """ For use by Trustscore. """
-        ...
 
 
 class Feedforward(SelectiveModel):
@@ -85,6 +74,13 @@ class Feedforward(SelectiveModel):
             confidences = None
         return nextout, confidences
 
+    def lite_forward(self, batch):
+        """ For use by MC Dropout. """
+        self.train()
+        nextout = self.initial_layers(batch)
+        nextout = self.final(nextout)
+        return {'outputs': nextout.detach()}
+
     def embed(self, batch):
         """ For use by Trustscore. """
         self.train()
@@ -112,6 +108,12 @@ class PretrainedTransformer(SelectiveModel):
         self.output_size = output_size + 1 if include_abstain else output_size
         self.model = AutoModelForSequenceClassification.from_pretrained(base_model, num_labels=self.output_size)
         self.confidence_extractor = confidence_extractor
+
+    def lite_forward(self, batch):
+        """ For use by MC Dropout. """
+        self.model.train()
+        outputs = self.model(**batch)
+        return {'outputs': outputs.logits.detach(), 'loss': outputs.loss.detach()}
 
     def embed(self, batch):
         """ For use by Trustscore. """
@@ -145,18 +147,13 @@ class RegularizedModel(SelectiveModel):
         self.base_model = base_model
         self.regularizer = regularizer
 
-    def embed(self, batch):
-        return self.base_model.embed(batch)
-
-    def forward(self, batch, compute_conf=True, compute_loss=True):
-        model_out = self.base_model.forward(batch, compute_conf, compute_loss)
+    def forward(self, batch, compute_conf=True):
+        model_out = self.base_model.forward(batch, compute_conf, compute_loss=True)
         model_out['labels'] = batch['labels']
-        if compute_loss:
-            regularized_loss = self.regularizer(model_out)
-            model_out['loss'] = regularized_loss
+        regularized_loss = self.regularizer(model_out)
+        model_out['loss'] = regularized_loss
         return model_out
 
     def notify(self, epoch):
         self.epoch = epoch
         self.regularizer.notify(epoch)
-
