@@ -224,7 +224,7 @@ def get_loss_abbrev(config):
         if lconfig['name'] == 'ereg':
             return 'ereg({})'.format(lconfig['lambda_param'])
         elif lconfig['name'] == 'dac':
-            return 'dac({})'.format(lconfig['warmup_epochs'])
+            return 'dac({},{})'.format(lconfig['alpha_final'], lconfig['alpha_init_factor'])
         else:
             return None
 
