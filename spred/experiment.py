@@ -1,16 +1,15 @@
 import json
 from spred.tasks.mnist import MnistTaskFactory
-from spred.tasks.normals import NormalsTaskFactory
+from spred.tasks.normals import NormalsTask
 from spred.tasks.glue import GlueTaskFactory
-from spred.tasks.sst2 import Sst2TaskFactory
-from spred.tasks.rte import RteTaskFactory
 from spred.analytics import ResultDatabase
 from spred.confidence import init_confidence_extractor, random_confidence
 from spred.decoder import validate_and_analyze
 from spred.analytics import ExperimentResult
+from spred.train import BasicTrainer
 
 task_factories = {'mnist': MnistTaskFactory,
-                  'normals': NormalsTaskFactory,
+                  'normals': NormalsTask,
                   "cola": GlueTaskFactory,
                   "mnli": GlueTaskFactory,
                   "mrpc": GlueTaskFactory,
@@ -22,15 +21,24 @@ task_factories = {'mnist': MnistTaskFactory,
 
 class Experiment:
 
-    def __init__(self, config):
+    def __init__(self, config, task=None):
         self.config = config
-        self.task = task_factories[config['task']['name']](config)
+        self.task = task
+        if self.task is None:
+            self.task = task_factories[config['task']['name']](config)
+
 
     def n_trials(self):
         if 'n_trials' in self.config:
             return self.config['n_trials']
         else:
             return 1
+
+
+    def init_trainer(self, conf_fn):
+        return BasicTrainer(self.config, self.task.train_loader,
+                            self.task.validation_loader, conf_fn=conf_fn)
+
 
     def run(self):
         training_conf_fn = random_confidence
@@ -43,18 +51,19 @@ class Experiment:
                 confidence_config = {'name': 'max_non_abstain'}
                 training_conf_fn = init_confidence_extractor(confidence_config, self.config,
                                                              self.task, None)
-        trainer = self.task.trainer_factory(training_conf_fn)
+        trainer = self.init_trainer(training_conf_fn)
         model, training_result = trainer()
         if 'evaluation' in self.config and self.config['evaluation'] == 'validation':
-            eval_loader = self.task.validation_loader_factory()
+            eval_loader = self.task.init_validation_loader()
         else:
-            eval_loader = self.task.test_loader_factory()
+            eval_loader = self.task.init_test_loader()
         eval_results = []
         for confidence_config in self.config['confidences']:
             conf_fn = init_confidence_extractor(confidence_config, self.config,
                                                 self.task, model)
             model.set_confidence_extractor(conf_fn)
-            result = validate_and_analyze(model, eval_loader, task_name=self.config['task']['name'])
+            task_name = self.config['task']['name'] if 'task' in self.config else None
+            result = validate_and_analyze(model, eval_loader, task_name=task_name)
             eval_results.append(result)
             print(confidence_config)
             print(result)

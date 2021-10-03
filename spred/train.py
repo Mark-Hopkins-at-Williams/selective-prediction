@@ -38,7 +38,7 @@ class BasicTrainer:
 
     def init_model(self, output_size=None):
         if output_size is None:
-            output_size = self.train_loader.output_size()
+            output_size = self.train_loader.num_labels()
         return init_model(self.config['network'], output_size, self.conf_fn,
                           self.regularizer, self.include_abstain)
 
@@ -85,12 +85,13 @@ class BasicTrainer:
         if "early_stopping_criterion" in self.config:
             es_criterion = self.config['early_stopping_criterion']
         for e in range(1, self.n_epochs+1):
+            print("Epoch {}:".format(e))
             model.notify(e)
             batch_loss = self.epoch_step(model)
             eval_result = self.validate_and_analyze(model)
             epoch_result = EpochResult(e, batch_loss, eval_result)
             epoch_results.append(epoch_result)
-            print(str(epoch_result))
+            # print(str(epoch_result))
             if eval_result[es_criterion] > top_validation_score: # TODO: what about criteria where smaller=better?
                 top_epoch, top_state_dict = e, deepcopy(model.state_dict())
                 top_validation_score = eval_result[es_criterion]
@@ -98,8 +99,8 @@ class BasicTrainer:
         top_model = self.init_model()
         top_model.load_state_dict(top_state_dict)
         top_model = top_model.to(self.device)
-        eval_result = self.validate_and_analyze(top_model)
-        print(str(eval_result))
+        # eval_result = self.validate_and_analyze(top_model)
+        # print(str(eval_result))
         return top_model, epoch_results
 
     def epoch_step(self, model):
@@ -124,7 +125,7 @@ class BasicTrainer:
         model.eval()
         results = list(self.decoder(model, self.validation_loader))
         validation_loss = self.decoder.get_loss()
-        eval_result = Evaluator(results, validation_loss,
-                                task_name=self.config['task']['name']).get_result()
+        task_name = self.config['task']['name'] if 'task' in self.config else None
+        eval_result = Evaluator(results, validation_loss, task_name).get_result()
         return eval_result
 

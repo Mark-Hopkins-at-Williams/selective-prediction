@@ -195,7 +195,7 @@ class ResultDatabase:
         for exp_result in self.results:
             config = exp_result.config
             loss = get_loss_abbrev(config)
-            task = config['task']['name']
+            task = config['task']['name'] if 'task' in config else "-"
             for j, eval_result in enumerate(exp_result.eval_results):
                 conf_abbrev = get_conf_abbrev(config['confidences'][j])
                 data['method'].append(loss + "_" + conf_abbrev)
@@ -268,7 +268,6 @@ def plot_training_metric(exp_results, metric_name):
 
 def plot_evaluation_metric(result_db, metric_name):
     df = result_db.as_dataframe()
-    print(df)
     sns.set_theme(style="whitegrid")
     sns.violinplot(y="method", x=metric_name, hue="task", data=df, orient="h", inner="stick")
     plt.gcf().subplots_adjust(left=0.35)

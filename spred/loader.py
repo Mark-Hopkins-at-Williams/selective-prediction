@@ -7,14 +7,24 @@ import random
 class Loader(ABC):
     @abstractmethod
     def __iter__(self):
+        """
+        Creates an Iterator over the batches of the Loader.
+
+        Each batch should be a dictionary with at least two keys:
+        - "inputs": maps to a torch.tensor containing the input vectors
+        - "labels": maps to a torch.tensor containing the corresponding labels
+
+        """
         ...
 
     @abstractmethod
     def __len__(self):
+        """ Number of batches provided by the Loader."""
         ...
 
     @abstractmethod
-    def output_size(self):
+    def num_labels(self):
+        """ Number of class labels in the dataset. """
         ...
 
 

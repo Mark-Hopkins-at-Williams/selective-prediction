@@ -6,10 +6,10 @@ from numpy import diag
 from random import shuffle
 from spred.loader import Loader
 from spred.viz import Visualizer
-from spred.task import TaskFactory
+from spred.task import Task
 
 
-def generate_samples(means, variances, noise_dim, num_samples):
+def generate_samples(means, variances, num_samples, noise_dim=0):
     return multivariate_normal(means + [0.0]*noise_dim,
                                diag(variances + [1.0]*noise_dim),
                                size=num_samples)
@@ -27,10 +27,10 @@ class NormalsLoader(Loader):
         for _ in range(num_batches):
             variance1 = 0.2
             variance2 = 0.1
-            pts1a = generate_samples([-1.0, 0.0], [variance1, variance2], self.noise_dim, bsz//4)
-            pts1b = generate_samples([1.0, 0.0], [variance1, variance2], self.noise_dim, bsz//4)
-            pts2a = generate_samples([0.0, -1.0], [variance2, variance1], self.noise_dim, bsz//4)
-            pts2b = generate_samples([0.0, 1.0], [variance2, variance1], self.noise_dim, bsz//4)
+            pts1a = generate_samples([-1.0, 0.0], [variance1, variance2], bsz//4, self.noise_dim)
+            pts1b = generate_samples([1.0, 0.0], [variance1, variance2], bsz//4, self.noise_dim)
+            pts2a = generate_samples([0.0, -1.0], [variance2, variance1], bsz//4, self.noise_dim)
+            pts2b = generate_samples([0.0, 1.0], [variance2, variance1], bsz//4, self.noise_dim)
             labeled = ([(pt, 0) for pt in pts1a] +
                        [(pt, 0) for pt in pts1b] +
                        [(pt, 1) for pt in pts2a] +
@@ -47,86 +47,30 @@ class NormalsLoader(Loader):
     def __len__(self):
         return self.num_batches
 
-    def output_size(self):
+    def num_labels(self):
         return 2
 
 
-class NormalsTaskFactory(TaskFactory):
+class NormalsTask(Task):
 
-    def train_loader_factory(self):
-        n_train_batches = self.config['task']['n_train_batches']
+    def __init__(self, config):
+        super().__init__(config)
+
+    def init_train_loader(self):
+        n_batches = self.config['task']['n_train_batches']
         bsz = self.config['bsz']
         noise_dim = self.config['task']['noise_dim']
-        return NormalsLoader(n_train_batches, bsz, noise_dim)
+        return NormalsLoader(n_batches, bsz, noise_dim)
 
-    def validation_loader_factory(self):
+    def init_validation_loader(self):
         n_batches = self.config['task']['n_validation_batches']
         bsz = self.config['bsz']
         noise_dim = self.config['task']['noise_dim']
         return NormalsLoader(n_batches, bsz, noise_dim)
 
-    def test_loader_factory(self):
-        n_test_batches = self.config['task']['n_test_batches']
+    def init_test_loader(self):
+        n_batches = self.config['task']['n_test_batches']
         bsz = self.config['bsz']
         noise_dim = self.config['task']['noise_dim']
-        return NormalsLoader(n_test_batches, bsz, noise_dim)
+        return NormalsLoader(n_batches, bsz, noise_dim)
 
-    def visualizer_factory(self):
-        return NormalsVisualizer(self.config['n_epochs'])
-
-
-class NormalsVisualizer(Visualizer):
-
-    def __init__(self, last_epoch):
-        super().__init__()
-        self.last_epoch = last_epoch
-
-    def viz(self, val_loader):
-        def x_coords(pts):
-            return [pt[0] for pt in pts]
-        def y_coords(pts):
-            return [pt[1] for pt in pts]
-        batch = next(iter(val_loader.restart()))
-        val_instances = batch['inputs']
-        labels = batch['labels']
-        pairs = [tuple(list(val_instances[i].numpy())[:2])
-                 for i in range(len(val_instances))]
-        class0 = [(pair, result) for (pair, result) in zip(pairs, labels)
-                  if result == 0]
-        class1 = [(pair, result) for (pair, result) in zip(pairs, labels)
-                  if result == 1]
-        plt.scatter(x_coords([c for (c,_) in class0]), y_coords([c for (c,_) in class0]),
-                    label="class A", color="red")
-        plt.scatter(x_coords([c for (c,_) in class1]), y_coords([c for (c,_) in class1]),
-                    label="class B", color="blue")
-        plt.legend()
-        plt.xlabel('x')
-        plt.ylabel('y')
-        plt.show()
-
-    def visualize(self, epoch, val_loader, results):
-        def x_coords(pts):
-            return [pt[0] for pt in pts]
-        def y_coords(pts):
-            return [pt[1] for pt in pts]
-        if False and epoch == self.last_epoch:
-            val_instances = next(iter(val_loader.restart()))['inputs']
-            pairs = [tuple(list(val_instances[i].numpy())[:2])
-                     for i in range(len(val_instances))]
-            class0 = [(pair, result) for (pair, result) in zip(pairs, results[:64])
-                      if result['gold'] == 0]
-            class1 = [(pair, result) for (pair, result) in zip(pairs, results[:64])
-                      if result['gold'] == 1]
-            pairs0 = [pair for (pair, _) in class0]
-            confs0 = [result['confidence'] for (_, result) in class0]
-            pairs1 = [pair for (pair, _) in class1]
-            confs1 = [result['confidence'] for (_, result) in class1]
-            plt.title('Confidence Visualization')
-            plt.scatter(x_coords(pairs0), y_coords(pairs0), c=confs0,
-                        label="class A", cmap='Reds')
-            plt.scatter(x_coords(pairs1), y_coords(pairs1), c=confs1,
-                        label="class B", cmap='Blues')
-            plt.legend()
-            plt.xlabel('x')
-            plt.ylabel('y')
-            plt.show()

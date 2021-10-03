@@ -1,7 +1,7 @@
 [
   {
     "task": "normals",
-    "training": "mcd",
+    "training": "dac",
     "n_trials": 1
   }
 ]

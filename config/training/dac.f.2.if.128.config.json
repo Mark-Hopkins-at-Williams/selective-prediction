@@ -2,8 +2,8 @@
   "regularizer": {
     "name": "dac",
     "warmup_epochs": 2,
-    "alpha_final": 1.0,
-    "alpha_init_factor": 64
+    "alpha_final": 2.0,
+    "alpha_init_factor": 128
   },
   "confidences": [
     {

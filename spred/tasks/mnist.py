@@ -4,7 +4,7 @@ import os
 from os.path import join
 from torchvision import datasets
 from torchvision import transforms
-from spred.task import TaskFactory
+from spred.task import Task
 from spred.model import Feedforward
 
 
@@ -116,7 +116,7 @@ class ConfusedMnistPairLoader(MnistPairLoader):
         super().__init__(dataset, bsz, shuffle, confuser_lookup[confuser])
 
 
-class MnistTaskFactory(TaskFactory):
+class MnistTaskFactory(Task):
 
     def __init__(self, config):
         super().__init__(config)

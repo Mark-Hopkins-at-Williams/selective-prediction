@@ -1,55 +1,163 @@
 [
   {
     "task": "rte",
-    "training": "dac.w2",
+    "training": "dac.f.0_5.if.32.config.json",
     "n_trials": 5,
     "evaluation": "validation"
   },
   {
     "task": "rte",
-    "training": "dac.w3",
+    "training": "dac.f.0_5.if.64.config.json",
     "n_trials": 5,
     "evaluation": "validation"
   },
   {
     "task": "rte",
-    "training": "dac.w5",
+    "training": "dac.f.0_5.if.128.config.json",
+    "n_trials": 5,
+    "evaluation": "validation"
+  },
+   {
+    "task": "rte",
+    "training": "dac.f.1.if.32.config.json",
+    "n_trials": 5,
+    "evaluation": "validation"
+  },
+  {
+    "task": "rte",
+    "training": "dac.f.1.if.64.config.json",
+    "n_trials": 5,
+    "evaluation": "validation"
+  },
+  {
+    "task": "rte",
+    "training": "dac.f.1.if.128.config.json",
+    "n_trials": 5,
+    "evaluation": "validation"
+  },
+   {
+    "task": "rte",
+    "training": "dac.f.2.if.32.config.json",
+    "n_trials": 5,
+    "evaluation": "validation"
+  },
+  {
+    "task": "rte",
+    "training": "dac.f.2.if.64.config.json",
+    "n_trials": 5,
+    "evaluation": "validation"
+  },
+  {
+    "task": "rte",
+    "training": "dac.f.2.if.128.config.json",
     "n_trials": 5,
     "evaluation": "validation"
   },
   {
     "task": "mrpc",
-    "training": "dac.w2",
+    "training": "dac.f.0_5.if.32.config.json",
     "n_trials": 5,
     "evaluation": "validation"
   },
   {
     "task": "mrpc",
-    "training": "dac.w3",
+    "training": "dac.f.0_5.if.64.config.json",
     "n_trials": 5,
     "evaluation": "validation"
   },
   {
     "task": "mrpc",
-    "training": "dac.w5",
+    "training": "dac.f.0_5.if.128.config.json",
+    "n_trials": 5,
+    "evaluation": "validation"
+  },
+   {
+    "task": "mrpc",
+    "training": "dac.f.1.if.32.config.json",
+    "n_trials": 5,
+    "evaluation": "validation"
+  },
+  {
+    "task": "mrpc",
+    "training": "dac.f.1.if.64.config.json",
+    "n_trials": 5,
+    "evaluation": "validation"
+  },
+  {
+    "task": "mrpc",
+    "training": "dac.f.1.if.128.config.json",
+    "n_trials": 5,
+    "evaluation": "validation"
+  },
+   {
+    "task": "mrpc",
+    "training": "dac.f.2.if.32.config.json",
+    "n_trials": 5,
+    "evaluation": "validation"
+  },
+  {
+    "task": "mrpc",
+    "training": "dac.f.2.if.64.config.json",
+    "n_trials": 5,
+    "evaluation": "validation"
+  },
+  {
+    "task": "mrpc",
+    "training": "dac.f.2.if.128.config.json",
     "n_trials": 5,
     "evaluation": "validation"
   },
   {
     "task": "sst2",
-    "training": "dac.w2",
+    "training": "dac.f.0_5.if.32.config.json",
     "n_trials": 5,
     "evaluation": "validation"
   },
   {
     "task": "sst2",
-    "training": "dac.w3",
+    "training": "dac.f.0_5.if.64.config.json",
     "n_trials": 5,
     "evaluation": "validation"
   },
   {
     "task": "sst2",
-    "training": "dac.w5",
+    "training": "dac.f.0_5.if.128.config.json",
+    "n_trials": 5,
+    "evaluation": "validation"
+  },
+   {
+    "task": "sst2",
+    "training": "dac.f.1.if.32.config.json",
+    "n_trials": 5,
+    "evaluation": "validation"
+  },
+  {
+    "task": "sst2",
+    "training": "dac.f.1.if.64.config.json",
+    "n_trials": 5,
+    "evaluation": "validation"
+  },
+  {
+    "task": "sst2",
+    "training": "dac.f.1.if.128.config.json",
+    "n_trials": 5,
+    "evaluation": "validation"
+  },
+   {
+    "task": "sst2",
+    "training": "dac.f.2.if.32.config.json",
+    "n_trials": 5,
+    "evaluation": "validation"
+  },
+  {
+    "task": "sst2",
+    "training": "dac.f.2.if.64.config.json",
+    "n_trials": 5,
+    "evaluation": "validation"
+  },
+  {
+    "task": "sst2",
+    "training": "dac.f.2.if.128.config.json",
     "n_trials": 5,
     "evaluation": "validation"
   }

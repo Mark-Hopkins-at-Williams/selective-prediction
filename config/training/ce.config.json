@@ -1,7 +1,4 @@
 {
-  "loss": {
-    "name": "default"
-  },
   "confidences": [
     {
       "name": "max_prob"

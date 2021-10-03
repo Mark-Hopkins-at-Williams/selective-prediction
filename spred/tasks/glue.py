@@ -2,7 +2,7 @@ import datasets
 from transformers import AutoTokenizer
 from spred.loader import Loader
 from torch.utils.data import DataLoader, random_split
-from spred.task import TaskFactory
+from spred.task import Task
 
 
 class TokenizerCache:
@@ -40,7 +40,7 @@ class GlueLoader(Loader):
         return self.output_sz
 
 
-class GlueTaskFactory(TaskFactory):
+class GlueTaskFactory(Task):
 
     def __init__(self, config):
         super().__init__(config)
