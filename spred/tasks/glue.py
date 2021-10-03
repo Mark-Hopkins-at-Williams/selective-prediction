@@ -36,7 +36,7 @@ class GlueLoader(Loader):
     def input_size(self):
         return 512  # this is max length of the sentences, not the embedding size
 
-    def output_size(self):
+    def num_labels(self):
         return self.output_sz
 
 
@@ -95,14 +95,14 @@ class GlueTaskFactory(Task):
             return self.tokenizer(examples[key1],
                                   padding="max_length", truncation=True)
 
-    def train_loader_factory(self):
+    def init_train_loader(self):
         self.initialize_datasets()
         return GlueLoader(self.train, shuffle=True, bsz=self.bsz, output_sz=self.output_size)
 
-    def validation_loader_factory(self):
+    def init_validation_loader(self):
         self.initialize_datasets()
         return GlueLoader(self.cotrain, shuffle=True, bsz=self.bsz, output_sz=self.output_size)
 
-    def test_loader_factory(self):
+    def init_test_loader(self):
         self.initialize_datasets()
         return GlueLoader(self.test, shuffle=False, bsz=self.bsz, output_sz=self.output_size)
