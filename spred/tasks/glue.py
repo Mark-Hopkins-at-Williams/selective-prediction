@@ -80,15 +80,15 @@ class GlueTask(Task):
 
     def init_train_loader(self, bsz):
         return GlueLoader(self.train, shuffle=True, bsz=bsz,
-                          output_sz=self.output_size)
+                          output_sz=self.output_size())
 
     def init_validation_loader(self, bsz):
         return GlueLoader(self.cotrain, shuffle=True, bsz=bsz,
-                          output_sz=self.output_size)
+                          output_sz=self.output_size())
 
     def init_test_loader(self, bsz):
         return GlueLoader(self.test, shuffle=False, bsz=bsz,
-                          output_sz=self.output_size)
+                          output_sz=self.output_size())
 
 
 task_hub.register('glue', GlueTask)
