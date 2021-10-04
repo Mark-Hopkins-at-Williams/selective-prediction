@@ -6,7 +6,8 @@ from numpy import diag
 from random import shuffle
 from spred.loader import Loader
 from spred.viz import Visualizer
-from spred.task import Task
+from spred.task import Task, task_hub
+
 
 
 def generate_samples(means, variances, num_samples, noise_dim=0):
@@ -19,7 +20,6 @@ class NormalsLoader(Loader):
     
     def __init__(self, num_batches, bsz, noise_dim):
         super().__init__()
-        self.bsz = bsz
         self.num_batches = num_batches
         self.noise_dim = noise_dim
         self.batches = []
@@ -53,24 +53,23 @@ class NormalsLoader(Loader):
 
 class NormalsTask(Task):
 
-    def __init__(self, config):
-        super().__init__(config)
+    def __init__(self, noise_dim, n_train_batches,
+                 n_validation_batches, n_test_batches):
+        super().__init__()
+        self.noise_dim = noise_dim
+        self.n_train_batches = n_train_batches
+        self.n_validation_batches = n_validation_batches
+        self.n_test_batches = n_test_batches
 
-    def init_train_loader(self):
-        n_batches = self.config['task']['n_train_batches']
-        bsz = self.config['bsz']
-        noise_dim = self.config['task']['noise_dim']
-        return NormalsLoader(n_batches, bsz, noise_dim)
+    def init_train_loader(self, bsz):
+        return NormalsLoader(self.n_train_batches, bsz, self.noise_dim)
 
-    def init_validation_loader(self):
-        n_batches = self.config['task']['n_validation_batches']
-        bsz = self.config['bsz']
-        noise_dim = self.config['task']['noise_dim']
-        return NormalsLoader(n_batches, bsz, noise_dim)
+    def init_validation_loader(self, bsz):
+        return NormalsLoader(self.n_validation_batches, bsz, self.noise_dim)
 
-    def init_test_loader(self):
-        n_batches = self.config['task']['n_test_batches']
-        bsz = self.config['bsz']
-        noise_dim = self.config['task']['noise_dim']
-        return NormalsLoader(n_batches, bsz, noise_dim)
+    def init_test_loader(self, bsz):
+        return NormalsLoader(self.n_test_batches, bsz, self.noise_dim)
+
+
+task_hub.register('normals', NormalsTask)
 

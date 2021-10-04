@@ -2,7 +2,7 @@ import datasets
 from transformers import AutoTokenizer
 from spred.loader import Loader
 from torch.utils.data import DataLoader, random_split
-from spred.task import Task
+from spred.task import Task, task_hub
 
 
 class TokenizerCache:
@@ -25,7 +25,6 @@ class GlueLoader(Loader):
         self.dataloader = DataLoader(dataset, shuffle=shuffle, batch_size=bsz)
         self.output_sz = output_sz
 
-
     def __iter__(self):
         for batch in self.dataloader:
             yield batch
@@ -33,58 +32,42 @@ class GlueLoader(Loader):
     def __len__(self):
         return len(self.dataloader)
 
-    def input_size(self):
-        return 512  # this is max length of the sentences, not the embedding size
-
     def num_labels(self):
         return self.output_sz
 
 
-class GlueTaskFactory(Task):
+class GlueTask(Task):
 
-    def __init__(self, config):
-        super().__init__(config)
-        self.initialize_datasets()
-
-    def initialize_datasets(self):
-        try:
-            _ = self.train
-        except AttributeError:
-            self.task_name = self.config['task']['name']
-            self.task_to_keys = {
-                "cola": ("sentence", None),
-                "mnli": ("premise", "hypothesis"),
-                "mrpc": ("sentence1", "sentence2"),
-                "qnli": ("question", "sentence"),
-                "qqp": ("question1", "question2"),
-                "rte": ("sentence1", "sentence2"),
-                "sst2": ("sentence", None),
-                "stsb": ("sentence1", "sentence2"),
-                "wnli": ("sentence1", "sentence2"),
-            }
-            tokenizer = self.config['network']['base_model']
-            self.bsz = self.config['bsz']
-            raw_datasets = datasets.load_dataset('glue', self.task_name)
-            self.tokenizer = tokenizer_cache.load(tokenizer)
-            tokenized = raw_datasets.map(self.tokenize_function, batched=True)
-            obsolete_cols = [key for key in self.task_to_keys[self.task_name]
-                             if key is not None] + ["idx"]
-            tokenized = tokenized.remove_columns(obsolete_cols)
-            tokenized = tokenized.rename_column("label", "labels")
-            tokenized.set_format("torch")
-            train_dataset = tokenized['train']
-            train_size = int(.5 * len(train_dataset))
-            cotrain_size = len(train_dataset) - train_size
-            self.train, self.cotrain = random_split(train_dataset,
-                                                    [train_size, cotrain_size])
-            self.test = tokenized['validation']
-
-            is_regression = self.task_name == "stsb"
-            if not is_regression:
-                label_list = raw_datasets["train"].features["label"].names
-                self.output_size = len(label_list)
-            else:
-                self.output_size = 1
+    def __init__(self, subtask, tokenizer):
+        super().__init__()
+        self.tokenizer = tokenizer_cache.load(tokenizer)
+        self.task_name = subtask
+        self.task_to_keys = {
+            "cola": ("sentence", None),
+            "mnli": ("premise", "hypothesis"),
+            "mrpc": ("sentence1", "sentence2"),
+            "qnli": ("question", "sentence"),
+            "qqp": ("question1", "question2"),
+            "rte": ("sentence1", "sentence2"),
+            "sst2": ("sentence", None),
+            "stsb": ("sentence1", "sentence2"),
+            "wnli": ("sentence1", "sentence2"),
+        }
+        raw_datasets = datasets.load_dataset('glue', self.task_name)
+        tokenized = raw_datasets.map(self.tokenize_function, batched=True)
+        obsolete_cols = [key for key in self.task_to_keys[self.task_name]
+                         if key is not None] + ["idx"]
+        tokenized = tokenized.remove_columns(obsolete_cols)
+        tokenized = tokenized.rename_column("label", "labels")
+        tokenized.set_format("torch")
+        train_dataset = tokenized['train']
+        train_size = int(.5 * len(train_dataset))
+        cotrain_size = len(train_dataset) - train_size
+        self.train, self.cotrain = random_split(train_dataset,
+                                                [train_size, cotrain_size])
+        self.test = tokenized['validation']
+        label_list = raw_datasets["train"].features["label"].names
+        self.output_sz = len(label_list)
 
     def tokenize_function(self, examples):
         key1, key2 = self.task_to_keys[self.task_name]
@@ -95,14 +78,17 @@ class GlueTaskFactory(Task):
             return self.tokenizer(examples[key1],
                                   padding="max_length", truncation=True)
 
-    def init_train_loader(self):
-        self.initialize_datasets()
-        return GlueLoader(self.train, shuffle=True, bsz=self.bsz, output_sz=self.output_size)
+    def init_train_loader(self, bsz):
+        return GlueLoader(self.train, shuffle=True, bsz=bsz,
+                          output_sz=self.output_size)
 
-    def init_validation_loader(self):
-        self.initialize_datasets()
-        return GlueLoader(self.cotrain, shuffle=True, bsz=self.bsz, output_sz=self.output_size)
+    def init_validation_loader(self, bsz):
+        return GlueLoader(self.cotrain, shuffle=True, bsz=bsz,
+                          output_sz=self.output_size)
 
-    def init_test_loader(self):
-        self.initialize_datasets()
-        return GlueLoader(self.test, shuffle=False, bsz=self.bsz, output_sz=self.output_size)
+    def init_test_loader(self, bsz):
+        return GlueLoader(self.test, shuffle=False, bsz=bsz,
+                          output_sz=self.output_size)
+
+
+task_hub.register('glue', GlueTask)

@@ -1,31 +1,26 @@
 import json
-from spred.tasks.mnist import MnistTaskFactory
-from spred.tasks.normals import NormalsTask
-from spred.tasks.glue import GlueTaskFactory
+import spred.tasks.normals
+from spred.tasks import *
+from spred.task import task_hub
 from spred.analytics import ResultDatabase
 from spred.confidence import init_confidence_extractor, random_confidence
 from spred.decoder import validate_and_analyze
 from spred.analytics import ExperimentResult
 from spred.train import BasicTrainer
 
-task_factories = {'mnist': MnistTaskFactory,
-                  'normals': NormalsTask,
-                  "cola": GlueTaskFactory,
-                  "mnli": GlueTaskFactory,
-                  "mrpc": GlueTaskFactory,
-                  "qnli": GlueTaskFactory,
-                  "qqp": GlueTaskFactory,
-                  "rte": GlueTaskFactory,
-                  "sst2": GlueTaskFactory,
-                  "wnli": GlueTaskFactory}
 
 class Experiment:
 
     def __init__(self, config, task=None):
         self.config = config
         self.task = task
+        task_config = self.config['task']
+        task_config = {k: task_config[k] for k in task_config if k != 'name'}
         if self.task is None:
-            self.task = task_factories[config['task']['name']](config)
+            self.task = task_hub.get(config['task']['name'])(**task_config)
+        self.train_loader = self.task.init_train_loader(config['bsz'])
+        self.validation_loader = self.task.init_validation_loader(config['bsz'])
+        self.test_loader = self.task.init_test_loader(config['bsz'])
 
 
     def n_trials(self):
@@ -36,8 +31,8 @@ class Experiment:
 
 
     def init_trainer(self, conf_fn):
-        return BasicTrainer(self.config, self.task.train_loader,
-                            self.task.validation_loader, conf_fn=conf_fn)
+        return BasicTrainer(self.config, self.train_loader,
+                            self.validation_loader, conf_fn=conf_fn)
 
 
     def run(self):
@@ -54,9 +49,9 @@ class Experiment:
         trainer = self.init_trainer(training_conf_fn)
         model, training_result = trainer()
         if 'evaluation' in self.config and self.config['evaluation'] == 'validation':
-            eval_loader = self.task.init_validation_loader()
+            eval_loader = self.validation_loader
         else:
-            eval_loader = self.task.init_test_loader()
+            eval_loader = self.test_loader
         eval_results = []
         for confidence_config in self.config['confidences']:
             conf_fn = init_confidence_extractor(confidence_config, self.config,

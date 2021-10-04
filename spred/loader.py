@@ -11,8 +11,10 @@ class Loader(ABC):
         Creates an Iterator over the batches of the Loader.
 
         Each batch should be a dictionary with at least two keys:
-        - "inputs": maps to a torch.tensor containing the input vectors
-        - "labels": maps to a torch.tensor containing the corresponding labels
+        - "inputs": maps to a torch.tensor of shape BxD containing the input
+        vectors, where B is batch size and D is input vector dimension
+        - "labels": maps to a torch.tensor of shape B containing the
+        corresponding labels
 
         """
         ...

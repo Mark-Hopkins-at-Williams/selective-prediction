@@ -1,6 +1,8 @@
 {
   "task": {
-    "name": "rte"
+    "name": "glue",
+    "subtask": "rte",
+    "tokenizer": "bert-base-cased"
   },
   "network": {
     "architecture": "pretrained",

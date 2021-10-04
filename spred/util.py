@@ -1,7 +1,6 @@
 import torch
 from torch.nn import functional
 
-
 def close_enough(t1, t2):
     error_msg = "Not close enough:\n{}\n{}".format(t1, t2)
     assert torch.allclose(t1, t2, atol=0.001), error_msg

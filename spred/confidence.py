@@ -19,7 +19,7 @@ def init_confidence_extractor(cconfig, config, task, model):
     elif name == 'posttrained':
         return PosttrainedConfidence(task, config, model)
     elif name == 'ts':
-        return TrustScore(task.train_loader, model, k=10, alpha=cconfig['alpha'], max_sample_size=cconfig['max_sample_size'])
+        return TrustScore(task.init_train_loader(config['bsz']), model, k=10, alpha=cconfig['alpha'], max_sample_size=cconfig['max_sample_size'])
     else:
         raise Exception('Confidence extractor not recognized: {}'.format(name))
 
@@ -87,8 +87,8 @@ class PosttrainedConfidence(Confidence):
     def __init__(self, task, config, base_model):
         super().__init__()
         calib_trainer = BasicTrainer(config,
-                                     BalancedLoader(CalibrationLoader(base_model, task.validation_loader)),
-                                     BalancedLoader(CalibrationLoader(base_model, task.train_loader)),
+                                     BalancedLoader(CalibrationLoader(base_model, task.init_validation_loader(config['bsz']))),
+                                     BalancedLoader(CalibrationLoader(base_model, task.init_train_loader(config['bsz']))),
                                      conf_fn=random_confidence)
         self.confidence_model, _ = calib_trainer()
         self.ident = "pt"
