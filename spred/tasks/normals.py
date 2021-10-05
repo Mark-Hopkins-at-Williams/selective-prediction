@@ -6,7 +6,8 @@ from numpy import diag
 from random import shuffle
 from spred.loader import Loader
 from spred.viz import Visualizer
-from spred.task import Task, task_hub
+from spred.task import Task
+from spred.hub import spred_hub
 
 
 
@@ -71,5 +72,5 @@ class NormalsTask(Task):
         return NormalsLoader(self.n_test_batches, bsz, self.noise_dim)
 
 
-task_hub.register('normals', NormalsTask)
+spred_hub.register_task('normals', NormalsTask)
 

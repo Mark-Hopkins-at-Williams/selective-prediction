@@ -198,11 +198,12 @@ class ResultDatabase:
             task = config['task']['name'] if 'task' in config else "-"
             for j, eval_result in enumerate(exp_result.eval_results):
                 conf_abbrev = get_conf_abbrev(config['confidences'][j])
-                data['method'].append(loss + "_" + conf_abbrev)
-                data['task'].append(task)
-                for metric_name in eval_result.as_dict():
-                    if metric_name not in ['f1', 'matthews_correlation']:
-                        data[metric_name].append(eval_result[metric_name])
+                if conf_abbrev != "sum_non_abstain":
+                    data['method'].append(loss + "_" + conf_abbrev)
+                    data['task'].append(task)
+                    for metric_name in eval_result.as_dict():
+                        if metric_name not in ['f1', 'matthews_correlation']:
+                            data[metric_name].append(eval_result[metric_name])
         return pd.DataFrame(data=dict(data))
 
 def get_conf_abbrev(cconfig):

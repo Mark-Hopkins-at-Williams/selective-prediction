@@ -9,7 +9,8 @@
     {
       "name": "ts",
       "max_sample_size": 800,
-      "alpha": 0.25
+      "alpha": 0.25,
+      "k": 10
     },
     {
       "name": "mcd",

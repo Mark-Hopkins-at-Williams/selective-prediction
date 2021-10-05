@@ -2,7 +2,7 @@ import torch
 from torch import tensor
 from spred.model import Feedforward
 from spred.loss import CrossEntropyLoss
-from spred.confidence import max_nonabstain_prob, max_prob
+from spred.confidence import MaxNonabstainProb, MaxProb
 from spred.loader import Loader
 
 
@@ -34,7 +34,7 @@ class ExampleLoader(Loader):
     def input_size(self):
         return self.batches[0].shape[1]
 
-    def output_size(self):
+    def num_labels(self):
         return self.output_size
 
 
@@ -58,7 +58,7 @@ def set_ffn_params(net):
 def build_interface_a_net():
     net = Feedforward(input_size=2, hidden_sizes=[2, 2], output_size=2,
                       loss_f=CrossEntropyLoss(),
-                      confidence_extractor=max_prob,
+                      confidence_extractor=MaxProb(),
                       include_abstain=False)
     set_ffn_params(net)
     net.eval()
@@ -68,7 +68,7 @@ def build_interface_a_net():
 def build_interface_b_net():
     net = Feedforward(input_size=2, hidden_sizes=[2, 2], output_size=2,
                       loss_f=CrossEntropyLoss(),
-                      confidence_extractor=max_nonabstain_prob,
+                      confidence_extractor=MaxNonabstainProb(),
                       include_abstain=True)
     set_ffn_params(net)
     net.eval()

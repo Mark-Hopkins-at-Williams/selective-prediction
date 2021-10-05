@@ -2,7 +2,8 @@ import datasets
 from transformers import AutoTokenizer
 from spred.loader import Loader
 from torch.utils.data import DataLoader, random_split
-from spred.task import Task, task_hub
+from spred.task import Task
+from spred.hub import spred_hub
 
 
 class TokenizerCache:
@@ -91,4 +92,4 @@ class GlueTask(Task):
                           output_sz=self.output_size())
 
 
-task_hub.register('glue', GlueTask)
+spred_hub.register_task('glue', GlueTask)

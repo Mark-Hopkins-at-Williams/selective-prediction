@@ -5,8 +5,8 @@ import torch
 from torch import tensor, nn
 from spred.loader import Loader
 from spred.util import softmax, close_enough, approx
-from spred.confidence import sum_nonabstain_prob, max_nonabstain_prob
-from spred.confidence import max_prob, random_confidence
+from spred.confidence import SumNonabstainProb, MaxNonabstainProb
+from spred.confidence import MaxProb, RandomConfidence
 from spred.confidence import MCDropoutConfidence, TrustScore
 from test.examples import ExampleLoader
 
@@ -45,24 +45,28 @@ class TestConfidence(unittest.TestCase):
 
     def test_sum_nonabstain_prob(self):
         batch = example_batch1()
+        sum_nonabstain_prob = SumNonabstainProb()
         conf = sum_nonabstain_prob(batch)
         expected = tensor([1.0 - .6439, 1.0 - .0871])
         close_enough(conf, expected)
 
     def test_max_nonabstain_prob(self):
         batch = example_batch1()
+        max_nonabstain_prob = MaxNonabstainProb()
         conf = max_nonabstain_prob(batch)
         expected = tensor([0.2369, 0.6439])
         close_enough(conf, expected)
 
     def test_max_prob(self):
         batch = example_batch1()
+        max_prob = MaxProb()
         conf = max_prob(batch)
         expected = tensor([0.6439, 0.6439])
         close_enough(conf, expected)
 
     def test_random_confidence(self):
         batch = example_batch1()
+        random_confidence = RandomConfidence()
         conf = random_confidence(batch)
         assert conf.shape == (2,)
         assert 0.0 <= conf[0] <= 1.0
@@ -71,7 +75,7 @@ class TestConfidence(unittest.TestCase):
     def test_mc_dropout_mean(self):
         base_model = ExampleModel()
         conf_fn = MCDropoutConfidence(n_forward_passes=4,
-                                      combo_id="mean")
+                                      aggregator="mean")
         batch = example_batch1()
         expected = tensor([(0.7488 + 0.5377 + 0.3044 + 0.1397) / 4.0,
                            (0.9032 + 0.8694 + 0.7891 + 0.6308) / 4.0])
@@ -80,7 +84,7 @@ class TestConfidence(unittest.TestCase):
     def test_mc_dropout_variance(self):
         base_model = ExampleModel()
         conf_fn = MCDropoutConfidence(n_forward_passes=4,
-                                      combo_id="negvar")
+                                      aggregator="negvar")
         batch = example_batch1()
         expected = tensor([-1 * numpy.var([0.7488, 0.5377, 0.3044, 0.1397], ddof=1),
                            -1 * numpy.var([0.9032, 0.8694, 0.7891, 0.6308], ddof=1)]).float()
@@ -152,10 +156,12 @@ class TestConfidence(unittest.TestCase):
                                         [3., 0.],
                                         [0., 5.]])}
         train_loader = ExampleLoader([batch1, batch2], output_size=2)
-        score = TrustScore(train_loader, TrivialEmbedder(), 2, 0.0)
+        score = TrustScore(2, 0.0)
+        score.train(train_loader, TrivialEmbedder())
         close_enough(score(model_out), tensor([1., 3., .3333]).double())
         train_loader = ExampleLoader([batch1, batch2], output_size=2)
-        score = TrustScore(train_loader, TrivialEmbedder(), 2, 0.33)
+        score = TrustScore(2, 0.33)
+        score.train(train_loader, TrivialEmbedder())
         close_enough(score(model_out), tensor([0.8198, 0.8279, 1.2079]).double())
 
 

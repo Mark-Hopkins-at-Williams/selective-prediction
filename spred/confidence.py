@@ -1,50 +1,12 @@
 import torch
+from abc import ABC, abstractmethod
 from torch import tensor
 from torch.nn import functional
 from spred.loss import softmax, gold_values
 from sklearn.neighbors import NearestNeighbors
 from spred.train import BasicTrainer
 from spred.loader import CalibrationLoader, BalancedLoader
-
-def init_confidence_extractor(cconfig, config, task, model):
-    confidence_extractor_lookup = {'sum_non_abstain': sum_nonabstain_prob,
-                                   'max_non_abstain': max_nonabstain_prob,
-                                   'max_prob': max_prob,
-                                   'random': random_confidence}
-    name = cconfig['name']
-    if name in confidence_extractor_lookup:
-        return confidence_extractor_lookup[name]
-    elif name == 'mcd':
-        return MCDropoutConfidence(combo_id=cconfig['aggregator'], n_forward_passes=cconfig['n_forward_passes'])
-    elif name == 'posttrained':
-        return PosttrainedConfidence(task, config, model)
-    elif name == 'ts':
-        return TrustScore(task.init_train_loader(config['bsz']), model, k=10, alpha=cconfig['alpha'], max_sample_size=cconfig['max_sample_size'])
-    else:
-        raise Exception('Confidence extractor not recognized: {}'.format(name))
-
-
-def sum_nonabstain_prob(batch, model=None):
-    output = batch['outputs']
-    probs = functional.softmax(output.clamp(min=-25, max=25), dim=-1)
-    return 1.0 - probs[:, -1]
-
-
-def max_nonabstain_prob(batch, model=None):
-    output = batch['outputs']
-    probs = functional.softmax(output.clamp(min=-25, max=25), dim=-1)
-    return probs[:, :-1].max(dim=1).values
-
-
-def max_prob(batch, model=None):
-    output = batch['outputs']
-    probs = functional.softmax(output.clamp(min=-25, max=25), dim=-1)
-    return probs.max(dim=1).values
-
-
-def random_confidence(batch, model=None):
-    output = batch['outputs']
-    return torch.rand(output.shape[0])
+from spred.hub import spred_hub
 
 
 class Confidence:
@@ -52,30 +14,102 @@ class Confidence:
     def __init__(self):
         self.ident = None
 
+    def train(self, train_loader, model):
+        """
+        If the confidence needs to be trained, override this method. As
+        arguments, you are provided with the training data and the trained
+        prediction function.
+
+        """
+        pass
+
     def identifier(self):
+        """
+        Provides the analytics engine with a short string by which it can refer
+        to the confidence function.
+
+        """
         return self.ident
+
+    @abstractmethod
+    def __call__(self, batch, model):
+        """
+        For each prediction in the batch, computes an associated confidence.
+
+        ```batch``` is a dictionary with the following keys:
+        - ```inputs```: a torch.tensor of shape BxD, where B is the batch size
+          and D is the dimension of the input vectors. Each row corresponds to
+          an input instance.
+        - ```outputs```: a torch.tensor of shape BxL, where B is the batch size
+          and L is the number of labels. Each row corresponds to the predicted
+          values for each label. These are not assumed to be normalized.
+
+        This function is expected to return a torch.tensor of shape B,
+        containing the confidences of each prediction in the batch.
+
+        """
+        ...
+
+
+class RandomConfidence(Confidence):
+    def __call__(self, batch, model=None):
+        output = batch['outputs']
+        return torch.rand(output.shape[0])
+
+
+class MaxProb(Confidence):
+    def __call__(self, batch, model=None):
+        output = batch['outputs']
+        probs = functional.softmax(output.clamp(min=-25, max=25), dim=-1)
+        return probs.max(dim=1).values
+
+
+class ProbabilityDifference(Confidence):
+    def __call__(self, batch, model=None):
+        def second_highest(t):
+            indices = t.max(dim=1).indices.unsqueeze(dim=1)
+            negate_highest = t.scatter_add(1, indices, -torch.ones(len(t), 1))
+            return negate_highest.max(dim=1).values
+        output = batch['outputs']
+        probs = functional.softmax(output.clamp(min=-25, max=25), dim=-1)
+        highest = probs.max(dim=1).values
+        next_highest = second_highest(probs)
+        return highest-next_highest
+
+
+class MaxNonabstainProb(Confidence):
+    def __call__(self, batch, model=None):
+        output = batch['outputs']
+        probs = functional.softmax(output.clamp(min=-25, max=25), dim=-1)
+        return probs[:, :-1].max(dim=1).values
+
+
+class SumNonabstainProb(Confidence):
+    def __call__(self, batch, model=None):
+        output = batch['outputs']
+        probs = functional.softmax(output.clamp(min=-25, max=25), dim=-1)
+        return 1.0 - probs[:, -1]
 
 
 class MCDropoutConfidence(Confidence):
-    def __init__(self, combo_id, n_forward_passes):
+    def __init__(self, aggregator, n_forward_passes):
         super().__init__()
         self.n_forward_passes = n_forward_passes
-        self.combo_id = combo_id
-        if combo_id == 'mean':
+        if aggregator == 'mean':
             self.combo_fn = lambda x: torch.mean(x, dim=0)
             self.ident = "mcdm"
-        elif combo_id == 'negvar':
+        elif aggregator == 'negvar':
             self.combo_fn = lambda x: -torch.var(x, dim=0)
             self.ident = "mcdv"
         else:
-            raise Exception('Combo function not recognized: {}'.format(combo_id))
+            raise Exception('Aggregator not recognized: {}'.format(aggregator))
 
-    def __call__(self, batch, lite_model):
+    def __call__(self, batch, model):
         output = batch['outputs']
         preds = torch.max(output, dim=1).indices
         pred_probs = []
         for _ in range(self.n_forward_passes):
-            model_out = lite_model(batch['inputs'])
+            model_out = model(batch['inputs'])
             dropout_output = softmax(model_out['outputs'])
             pred_probs.append(gold_values(dropout_output, preds))
         pred_probs = torch.stack(pred_probs)
@@ -103,15 +137,20 @@ class PosttrainedConfidence(Confidence):
 
 
 class TrustScore(Confidence):
-    def __init__(self, train_loader, model, k, alpha, max_sample_size=1000):
+    def __init__(self, k, alpha, max_sample_size=1000):
         super().__init__()
         self.k = k
         self.alpha = alpha
-        self.model = model
+        self.max_sample_size = max_sample_size
         self.ident = "ts" + str(int(alpha*100))
+        self.model = None
+        self.high_density_sets = None
+
+    def train(self, train_loader, model):
         device = (torch.device("cuda") if torch.cuda.is_available()
                   else torch.device("cpu"))
         full_dataset = None
+        self.model = model
         for batch in train_loader:
             batch = {k: v.to(device) for k, v in batch.items()}
             self.model.eval()
@@ -121,12 +160,12 @@ class TrustScore(Confidence):
                          'labels': batch['labels']}
             if full_dataset is None:
                 full_dataset = embedding
-            elif len(full_dataset['inputs']) < max_sample_size:
+            elif len(full_dataset['inputs']) < self.max_sample_size:
                 for key in full_dataset:
                     full_dataset[key] = torch.cat([full_dataset[key], embedding[key]])
             else:
                 break
-        self.high_density_sets = TrustScore.compute_high_density_sets(full_dataset, k, alpha)
+        self.high_density_sets = TrustScore.compute_high_density_sets(full_dataset, self.k, self.alpha)
 
     @staticmethod
     def distance_to_set(pt, t):
@@ -177,3 +216,10 @@ class TrustScore(Confidence):
             confidences.append(next_closest_dist / dist_to_pred_class)
         return tensor(confidences)
 
+
+spred_hub.register_confidence_fn("random", RandomConfidence)
+spred_hub.register_confidence_fn("max_prob", MaxProb)
+spred_hub.register_confidence_fn("max_nonabstain", MaxNonabstainProb)
+spred_hub.register_confidence_fn("sum_nonabstain", SumNonabstainProb)
+spred_hub.register_confidence_fn("mcd", MCDropoutConfidence)
+spred_hub.register_confidence_fn("ts", TrustScore)
