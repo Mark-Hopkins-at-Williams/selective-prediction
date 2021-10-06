@@ -3,7 +3,7 @@ from math import log
 import torch
 from torch import tensor
 from spred.loss import CrossEntropyLoss
-from spred.loss import LossWithErrorRegularization
+from spred.loss import ErrorRegularizer
 from spred.loss import AbstainingLoss, DACLoss
 from spred.util import softmax, close_enough
 from torch.nn import functional
@@ -25,7 +25,7 @@ def example_batch1():
                                            [0.0629, 0.7662, 0.1710],
                                            [0.0674, 0.1112, 0.8214]]))
     close_enough(confs, tensor([0.6652, 0.6285, 0.6897, 0.5465, 0.7662, 0.8214]))
-    batch = {'outputs': outputs, 'labels': labels, 'confidences': confs}
+    batch = {'outputs': outputs, 'labels': labels, 'confidences': confs, 'loss': 1.0}
     return batch
 
 def example_batch2():
@@ -41,12 +41,12 @@ def example_batch2():
 
 def example_batch3():
     outputs = tensor([[-1., -2.],
-                     [3., -1.],
-                     [-3., 3.],
-                     [-1.5, 2.]])
+                      [3., -1.],
+                      [-3., 3.],
+                      [-1.5, 2.]])
     labels = torch.tensor([1, 0, 1, 0])  # F T T F
     confs = torch.tensor([0.2, 0.3, 0.4, 0.5], requires_grad=True)
-    batch = {'outputs': outputs, 'labels': labels, 'confidences': confs}
+    batch = {'outputs': outputs, 'labels': labels, 'confidences': confs, 'loss': 1.0}
     return confs, batch
 
 
@@ -59,18 +59,16 @@ class TestLoss(unittest.TestCase):
         close_enough(loss, tensor((-log(0.2369) - log(0.0321))/2))
 
     def test_error_reg_loss(self):
-        base_loss_fn = CrossEntropyLoss()
-        loss_fn = LossWithErrorRegularization(base_loss_fn, lambda_param=0.5)
+        loss_fn = ErrorRegularizer(lambda_param=0.5)
         batch = example_batch1()
         loss = loss_fn(batch)
-        base_loss = base_loss_fn(batch)
+        base_loss = torch.tensor(1.0)
         expected_penalty = ((.6652-.6897)**2 + (.6652-.8214)**2 + (.5465-.6285)**2 +
                             (.5465-.6897)**2 + (.5465-.8214)**2 + (.7662-.8214)**2)
         close_enough(loss, base_loss + 0.5 * expected_penalty)
 
     def test_error_reg_loss_grad(self):
-        base_loss_fn = lambda x: 1.0
-        loss_fn = LossWithErrorRegularization(base_loss_fn, lambda_param=0.5)
+        loss_fn = ErrorRegularizer(lambda_param=0.5)
         confs, batch = example_batch3()
         loss = loss_fn(batch)
         expected_penalty = ((.3-.5)**2 + (.4-.5)**2)

@@ -219,7 +219,7 @@ class TrustScore(Confidence):
 
 spred_hub.register_confidence_fn("random", RandomConfidence)
 spred_hub.register_confidence_fn("max_prob", MaxProb)
-spred_hub.register_confidence_fn("max_nonabstain", MaxNonabstainProb)
-spred_hub.register_confidence_fn("sum_nonabstain", SumNonabstainProb)
+spred_hub.register_confidence_fn("max_non_abstain", MaxNonabstainProb)
+spred_hub.register_confidence_fn("sum_non_abstain", SumNonabstainProb)
 spred_hub.register_confidence_fn("mcd", MCDropoutConfidence)
 spred_hub.register_confidence_fn("ts", TrustScore)

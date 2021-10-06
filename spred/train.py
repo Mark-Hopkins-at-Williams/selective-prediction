@@ -9,7 +9,7 @@ from spred.decoder import Decoder
 import torch.optim as optim
 from transformers import AdamW
 from transformers import get_scheduler
-from spred.loss import init_regularizer
+from spred.hub import spred_hub
 
 
 class BasicTrainer:
@@ -24,9 +24,11 @@ class BasicTrainer:
         self.regularizer = None
         self.include_abstain = False
         if 'regularizer' in self.config:
-            self.regularizer = init_regularizer(self.config['regularizer'], self.n_epochs)
-        if self.regularizer is not None:
-            self.n_epochs += self.regularizer.bonus_epochs()
+            loss_constructor = spred_hub.get_loss_fn(config['regularizer']['name'])
+            loss_config = config['regularizer']
+            params = {k: loss_config[k] for k in loss_config if k != "name"}
+            self.regularizer = loss_constructor(**params)
+            self.n_epochs += self.regularizer.bonus_epochs(self.n_epochs)
             self.include_abstain = self.regularizer.include_abstain()
         self.decoder = self.init_decoder()
         self.conf_fn = conf_fn

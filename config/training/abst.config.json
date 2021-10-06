@@ -1,0 +1,15 @@
+{
+  "regularizer": {
+    "name": "abst",
+    "warmup_epochs": 10,
+    "alpha": 0.02
+  },
+  "confidences": [
+    {
+      "name": "max_non_abstain"
+    },
+    {
+      "name": "sum_non_abstain"
+    }
+  ]
+}

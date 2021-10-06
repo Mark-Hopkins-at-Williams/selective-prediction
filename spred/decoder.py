@@ -3,22 +3,21 @@ from torch.nn import functional
 from tqdm import tqdm
 from datasets import load_metric
 from spred.evaluate import Evaluator
+from spred.util import softmax
 
 
-def validate_and_analyze(model, validation_loader, epoch=0, visualizer=None, task_name=None):
-    decoder = Decoder()
+def validate_and_analyze(model, validation_loader, task_name=None):
+    decoder = Decoder(model.include_abstain())
     model.eval()
     results = list(decoder(model, validation_loader))
     validation_loss = decoder.get_loss()
-    if visualizer is not None:
-        visualizer.visualize(epoch, validation_loader, results)
     eval_result = Evaluator(results, validation_loss, task_name).get_result()
     return eval_result
 
 
 class Decoder:
 
-    def __init__(self, include_abstain_output=False):
+    def __init__(self, include_abstain_output):
         self.device = (torch.device("cuda") if torch.cuda.is_available()
                        else torch.device("cpu"))
         self.include_abstain_output = include_abstain_output
@@ -33,17 +32,18 @@ class Decoder:
             preds = outputs.argmax(dim=1)
             for p, g, c in zip(preds, labels, conf):
                 yield {'pred': p.item(), 'gold': g.item(),
-                       'confidence': c.item(), 'abstain': False}
+                       'confidence': c.item(), 'non_abstain_prob': 1.0}
         else:
-            output = functional.softmax(outputs.clamp(min=-25, max=25), dim=1)
+            output = softmax(outputs)
+            abstain_probs = output[:, -1]
             preds = output.argmax(dim=-1)
             abs_i = output.shape[1] - 1
             preds[preds == abs_i] = -1
             no_abstain_preds = output[:, :-1].argmax(dim=-1)
-            for element in zip(no_abstain_preds, labels, conf, preds):
+            for element in zip(no_abstain_preds, labels, conf, abstain_probs):
                 p, g, c, p2 = element
                 result = {'pred': p.item(), 'gold': g.item(),
-                          'confidence': c.item(), 'abstain': p2.item() == -1}
+                          'confidence': c.item(), 'non_abstain_prob': (1.0-p2).item()}
                 yield result
 
     def __call__(self, model, data, loss_f=None):

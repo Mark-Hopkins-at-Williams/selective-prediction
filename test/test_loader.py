@@ -35,10 +35,7 @@ class ExampleLoader(Loader):
     def __len__(self):
         return 3
 
-    def input_size(self):
-        return 2
-
-    def output_size(self):
+    def num_labels(self):
         return 2
 
 

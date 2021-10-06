@@ -1,6 +1,6 @@
 from torch import nn
 from transformers import AutoModelForSequenceClassification
-from spred.loss import init_loss_fn
+from spred.hub import spred_hub
 
 
 def init_model(model_config, output_size, conf_fn, regularizer, include_abstain):
@@ -13,22 +13,26 @@ def init_model(model_config, output_size, conf_fn, regularizer, include_abstain)
         params['output_size'] = output_size
     params['confidence_extractor'] = conf_fn
     if 'loss' in model_config:
-        params['loss_f'] = init_loss_fn(model_config['loss'])
-    params['include_abstain'] = include_abstain
+        loss_constructor = spred_hub.get_loss_fn(model_config['loss']['name'])
+        loss_config = model_config['loss']
+        lparams = {k: loss_config[k] for k in loss_config if k != "name"}
+        params['loss_f'] = loss_constructor(**lparams)
+    params['incl_abstain'] = include_abstain
     model_constructor = model_lookup[architecture]
     base_model = model_constructor(**params)
     if regularizer is not None:
-        return RegularizedModel(base_model, regularizer)
+        return RegularizedModel(base_model, regularizer, include_abstain)
     else:
         return base_model
 
 
 class SelectiveModel(nn.Module):
 
-    def __init__(self):
+    def __init__(self, incl_abstain):
         super().__init__()
         self.epoch = 0
         self.confidence_extractor = None
+        self.incl_abstain = incl_abstain
 
     def set_confidence_extractor(self, extractor):
         self.confidence_extractor = extractor
@@ -36,14 +40,18 @@ class SelectiveModel(nn.Module):
     def notify(self, epoch):
         self.epoch = epoch
 
+    def include_abstain(self):
+        return self.incl_abstain
+
+
 
 class Feedforward(SelectiveModel):
 
     def __init__(self, input_size, hidden_sizes, output_size,
-                 loss_f, confidence_extractor, include_abstain=False):
-        super().__init__()
+                 loss_f, confidence_extractor, incl_abstain):
+        super().__init__(incl_abstain)
         self.input_size = input_size
-        self.output_size = output_size + 1 if include_abstain else output_size
+        self.output_size = output_size + 1 if self.include_abstain() else output_size
         self.confidence_extractor = confidence_extractor
         self.dropout = nn.Dropout(p=0.5)
         self.linears = nn.ModuleList([])
@@ -103,9 +111,9 @@ class Feedforward(SelectiveModel):
 class PretrainedTransformer(SelectiveModel):
 
     def __init__(self, base_model, confidence_extractor, output_size,
-                 include_abstain=False):
-        super().__init__()
-        self.output_size = output_size + 1 if include_abstain else output_size
+                 incl_abstain):
+        super().__init__(incl_abstain)
+        self.output_size = output_size + 1 if self.include_abstain() else output_size
         self.model = AutoModelForSequenceClassification.from_pretrained(base_model, num_labels=self.output_size)
         self.confidence_extractor = confidence_extractor
 
@@ -142,8 +150,8 @@ class PretrainedTransformer(SelectiveModel):
 
 class RegularizedModel(SelectiveModel):
 
-    def __init__(self, base_model, regularizer):
-        super().__init__()
+    def __init__(self, base_model, regularizer, incl_abstain):
+        super().__init__(incl_abstain)
         self.base_model = base_model
         self.regularizer = regularizer
 
@@ -155,5 +163,8 @@ class RegularizedModel(SelectiveModel):
         return model_out
 
     def notify(self, epoch):
-        self.epoch = epoch
+        self.base_model.notify(epoch)
         self.regularizer.notify(epoch)
+
+    def set_confidence_extractor(self, extractor):
+        self.base_model.confidence_extractor = extractor

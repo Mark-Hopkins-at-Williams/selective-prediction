@@ -9,7 +9,7 @@ from spred.loader import Loader
 class ExampleFeedforwardLoader:
 
     def __init__(self):
-        self.images = torch.tensor([[-2., 1.], [5., 2.]])
+        self.images = torch.tensor([[-2, 1], [5, 2.]])
         self.labels = torch.tensor([1, 0])
 
     def __iter__(self):
@@ -41,16 +41,16 @@ class ExampleLoader(Loader):
 def set_ffn_params(net):
     for param in net.parameters():
         if param.shape == torch.Size([3]):
-            param.data = tensor([1.0, 2.0, 3.0])
+            param.data = tensor([0.1, 0.2, 0.3])
         elif param.shape == torch.Size([2, 2]):
-            param.data = tensor([[-2.0, 1.0],
-                                 [2.0, 3.0]])
+            param.data = tensor([[-0.2, 0.1],
+                                 [0.2, 0.3]])
         elif param.shape == torch.Size([2]):
-            param.data = tensor([-1.0, 1.0])
+            param.data = tensor([-0.1, 0.1])
         elif param.shape == torch.Size([3, 2]):
-            param.data = tensor([[-1.0, 1.0],
-                                 [2.0, 3.0],
-                                 [4.0, 5.0]])
+            param.data = tensor([[-0.1, 0.1],
+                                 [0.2, 0.3],
+                                 [0.4, 0.5]])
         else:
             torch.nn.init.ones_(param)
 

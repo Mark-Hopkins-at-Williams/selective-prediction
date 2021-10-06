@@ -30,20 +30,27 @@ class EvaluationStatistic(ABC):
 
 class ErrorCount(EvaluationStatistic):
     def notify(self, pred):
-        if not pred['abstain'] and pred['pred'] != pred['gold']:
+        if pred['pred'] != pred['gold']:
             self.stat += 1
 
 
 class CorrectCount(EvaluationStatistic):
     def notify(self, pred):
-        if not pred['abstain'] and pred['pred'] == pred['gold']:
+        if pred['pred'] == pred['gold']:
             self.stat += 1
 
 
-class PublishedCount(EvaluationStatistic):
+class AverageNonabstainProb(EvaluationStatistic):
+
+    def __init__(self):
+        super().__init__()
+        self.numerator = 0.0
+        self.denominator = 0.0
+
     def notify(self, pred):
-        if not pred['abstain']:
-            self.stat += 1
+        self.denominator += 1
+        self.numerator += pred['non_abstain_prob']
+        self.stat = self.numerator / self.denominator
 
 
 class AverageErrorConfidence(EvaluationStatistic):
@@ -53,10 +60,11 @@ class AverageErrorConfidence(EvaluationStatistic):
         self.denominator = 0.0
 
     def notify(self, pred):
-        self.denominator += 1
         if pred['pred'] != pred['gold']:
             self.numerator += pred['confidence']
-        self.stat = self.numerator / self.denominator
+            self.denominator += 1
+        if self.denominator != 0:
+            self.stat = self.numerator / self.denominator
 
 
 class AverageCorrectConfidence(EvaluationStatistic):
@@ -66,10 +74,11 @@ class AverageCorrectConfidence(EvaluationStatistic):
         self.denominator = 0.0
 
     def notify(self, pred):
-        self.denominator += 1
         if pred['pred'] == pred['gold']:
             self.numerator += pred['confidence']
-        self.stat = self.numerator / self.denominator
+            self.denominator += 1
+        if self.denominator != 0:
+            self.stat = self.numerator / self.denominator
 
 
 class Accuracy(EvaluationStatistic):
@@ -233,7 +242,7 @@ class Evaluator:
     def __init__(self, predictions, validation_loss=None, task_name=None):
         self.stat_map = {'n_errors': ErrorCount(),
                          'n_correct': CorrectCount(),
-                         'n_published': PublishedCount(),
+                         'avg_non_abstain': AverageNonabstainProb(),
                          'avg_crr_conf': AverageCorrectConfidence(),
                          'avg_err_conf': AverageErrorConfidence(),
                          'accuracy': Accuracy(),

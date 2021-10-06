@@ -7,22 +7,7 @@ import math
 from spred.util import abstain_probs, nonabstain_probs
 from spred.util import renormalized_nonabstain_probs
 from spred.util import nonabstain_prob_mass, gold_values, softmax
-
-
-def init_loss_fn(loss_config):
-    loss_lookup = {'ce': CrossEntropyLoss}
-    params = {k: v for k, v in loss_config.items() if k != 'name'}
-    return loss_lookup[loss_config['name']](**params)
-
-
-def init_regularizer(rconfig, n_epochs):
-    regularizer_lookup = {'ereg': ErrorRegularizer,
-                          'dac': DACLoss,
-                          'conf1': AbstainingLoss}
-    params = {k: v for k, v in rconfig.items() if k != 'name'}
-    if rconfig['name'] == 'dac':
-        params['total_epochs'] = n_epochs + rconfig['warmup_epochs']
-    return regularizer_lookup[rconfig['name']](**params)
+from spred.hub import spred_hub
 
 
 class ConfidenceLoss(torch.nn.Module, ABC):
@@ -31,15 +16,45 @@ class ConfidenceLoss(torch.nn.Module, ABC):
 
     @abstractmethod
     def __call__(self, batch):
+        """
+        For the set of predictions in the batch, computes a numeric loss.
+
+        ```batch``` is a dictionary with the following keys:
+        - ```outputs```: a torch.tensor of shape BxL, where B is the batch size
+          and L is the number of labels. Each row corresponds to the predicted
+          values for each label. These are not assumed to be normalized.
+        - ```labels```: a torch.tensor of shape B, where B is the batch size.
+        The elements are the gold labels for the batch instances.
+        - ```confidences```: a torch.tensor of shape B, where B is the batch size.
+        The elements are the model's confidences for the batch instances.
+        - ```loss```: the model's default loss for the batch
+
+        This function is expected to return a torch.tensor containing a single
+        element -- the loss for the batch.
+
+        """
         ...
 
     def notify(self, epoch):
+        """Notifies the loss function of the current epoch, if helpful."""
         pass
 
-    def bonus_epochs(self):
+    def bonus_epochs(self, num_epochs):
+        """
+        Notifies the loss function of the total number of epochs.
+
+        This method should return an integer corresponding to how many extra
+        "bonus" epochs the loss function requires.
+
+        """
         return 0
 
     def include_abstain(self):
+        """
+        Returns whether this loss function assumes an explicit "abstain" label,
+        in addition to the set of task labels.
+
+        """
         return False
 
 
@@ -77,8 +92,7 @@ class ErrorRegularizer(ConfidenceLoss):
 
 
 class AbstainingLoss(ConfidenceLoss):
-    # TODO: rethink this loss function
-    def __init__(self, alpha=0.5, warmup_epochs=3):
+    def __init__(self, alpha, warmup_epochs):
         super().__init__()
         self.alpha = 0.0
         self.warmup_epochs = warmup_epochs
@@ -90,24 +104,27 @@ class AbstainingLoss(ConfidenceLoss):
             self.alpha = self.target_alpha
 
     def __call__(self, batch):
-        output, gold, confidence = batch['outputs'], batch['labels'], batch['confidences']
+        output, gold = batch['outputs'], batch['labels']
+        base_loss = batch['loss']
         dists = softmax(output)
-        label_ps = dists[list(range(output.shape[0])), gold]
         abstains = dists[:, -1]
-        losses = label_ps + (self.alpha * abstains)
+        losses = self.alpha * abstains
         losses = torch.clamp(losses, min=0.000000001)
-        return -torch.mean(torch.log(losses))
+        losses = -torch.mean(torch.log(losses))
+        return base_loss + losses
+
+    def include_abstain(self):
+        return True
 
 
 class DACLoss(ConfidenceLoss):
     # for numerical stability
     epsilon = 1e-7
 
-    def __init__(self, warmup_epochs, total_epochs,
-                 alpha_final=1.0, alpha_init_factor=64.):
+    def __init__(self, warmup_epochs, alpha_final=1.0, alpha_init_factor=64.):
         super(ConfidenceLoss, self).__init__()
         self.learn_epochs = warmup_epochs
-        self.total_epochs = total_epochs
+        self.total_epochs = warmup_epochs
         self.alpha_final = alpha_final
         self.alpha_init_factor = alpha_init_factor
         self.cuda_device = (torch.device("cuda") if torch.cuda.is_available()
@@ -127,7 +144,8 @@ class DACLoss(ConfidenceLoss):
     def notify(self, epoch):
         self.epoch = epoch
 
-    def bonus_epochs(self):
+    def bonus_epochs(self, num_epochs):
+        self.total_epochs = num_epochs + self.learn_epochs
         return self.learn_epochs
 
     def include_abstain(self):
@@ -200,3 +218,8 @@ class DACLoss(ConfidenceLoss):
                 return loss.mean()
             except RuntimeError as e:
                 print(e)
+
+spred_hub.register_loss_fn("ce", CrossEntropyLoss)
+spred_hub.register_loss_fn("ereg", ErrorRegularizer)
+spred_hub.register_loss_fn("dac", DACLoss)
+spred_hub.register_loss_fn("abst", AbstainingLoss)

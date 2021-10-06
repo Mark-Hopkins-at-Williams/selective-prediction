@@ -53,7 +53,7 @@ class CalibrationLoader(Loader):
     def __len__(self):
         return len(self.base_loader)
 
-    def output_size(self):
+    def num_labels(self):
         return 2
 
 
@@ -82,5 +82,5 @@ class BalancedLoader(Loader):
     def __len__(self):
         return len(self.base_loader)
 
-    def output_size(self):
+    def num_labels(self):
         return self.base_loader.output_size()
