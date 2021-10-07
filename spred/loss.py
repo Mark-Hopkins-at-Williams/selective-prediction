@@ -10,6 +10,12 @@ from spred.util import nonabstain_prob_mass, gold_values, softmax
 from spred.hub import spred_hub
 
 
+def init_loss_fn(loss_config):
+    loss_constructor = spred_hub.get_loss_fn(loss_config['name'])
+    lparams = {k: loss_config[k] for k in loss_config if k != "name"}
+    return loss_constructor(**lparams)
+
+
 class ConfidenceLoss(torch.nn.Module, ABC):
     def __init__(self):
         super(ConfidenceLoss, self).__init__()

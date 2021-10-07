@@ -4,9 +4,10 @@
     "subtask": "sst2",
     "tokenizer": "bert-base-cased"
   },
-  "network": {
-    "architecture": "pretrained",
-    "base_model": "bert-base-cased"
+  "model": {
+    "name": "pretrained",
+    "base_model": "bert-base-cased",
+    "output_size": 2
   },
   "optimizer": {
     "name": "adamw",

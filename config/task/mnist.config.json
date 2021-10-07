@@ -3,8 +3,8 @@
     "name": "mnist",
     "confuser": "1<>7"
   },
-  "network": {
-    "architecture": "feedforward",
+  "model": {
+    "name": "feedforward",
     "input_size": 784,
     "hidden_sizes": [128, 64],
     "output_size": 10,

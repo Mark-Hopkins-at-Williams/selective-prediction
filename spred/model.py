@@ -1,24 +1,16 @@
 from torch import nn
 from transformers import AutoModelForSequenceClassification
 from spred.hub import spred_hub
+from spred.loss import init_loss_fn
 
-
-def init_model(model_config, output_size, conf_fn, regularizer, include_abstain):
-    model_lookup = {'feedforward': Feedforward,
-                    'pretrained': PretrainedTransformer}
-    architecture = model_config['architecture']
+def init_model(model_config, regularizer, include_abstain):
+    architecture = model_config['name']
     params = {k: model_config[k] for k in model_config
-              if k not in ['architecture', 'loss']}
-    if 'output_size' != params:
-        params['output_size'] = output_size
-    params['confidence_extractor'] = conf_fn
+              if k not in ['name', 'loss']}
     if 'loss' in model_config:
-        loss_constructor = spred_hub.get_loss_fn(model_config['loss']['name'])
-        loss_config = model_config['loss']
-        lparams = {k: loss_config[k] for k in loss_config if k != "name"}
-        params['loss_f'] = loss_constructor(**lparams)
+        params['loss_f'] = init_loss_fn(model_config['loss'])
     params['incl_abstain'] = include_abstain
-    model_constructor = model_lookup[architecture]
+    model_constructor = spred_hub.get_model(architecture)
     base_model = model_constructor(**params)
     if regularizer is not None:
         return RegularizedModel(base_model, regularizer, include_abstain)
@@ -48,11 +40,11 @@ class SelectiveModel(nn.Module):
 class Feedforward(SelectiveModel):
 
     def __init__(self, input_size, hidden_sizes, output_size,
-                 loss_f, confidence_extractor, incl_abstain):
+                 loss_f, incl_abstain):
         super().__init__(incl_abstain)
         self.input_size = input_size
         self.output_size = output_size + 1 if self.include_abstain() else output_size
-        self.confidence_extractor = confidence_extractor
+        self.confidence_extractor = None
         self.dropout = nn.Dropout(p=0.5)
         self.linears = nn.ModuleList([])
         self.linears.append(nn.Linear(input_size, hidden_sizes[0]))
@@ -110,12 +102,11 @@ class Feedforward(SelectiveModel):
 
 class PretrainedTransformer(SelectiveModel):
 
-    def __init__(self, base_model, confidence_extractor, output_size,
-                 incl_abstain):
+    def __init__(self, base_model, output_size, incl_abstain):
         super().__init__(incl_abstain)
         self.output_size = output_size + 1 if self.include_abstain() else output_size
         self.model = AutoModelForSequenceClassification.from_pretrained(base_model, num_labels=self.output_size)
-        self.confidence_extractor = confidence_extractor
+        self.confidence_extractor = None
 
     def lite_forward(self, batch):
         """ For use by MC Dropout. """
@@ -168,3 +159,7 @@ class RegularizedModel(SelectiveModel):
 
     def set_confidence_extractor(self, extractor):
         self.base_model.confidence_extractor = extractor
+
+
+spred_hub.register_model("feedforward", Feedforward)
+spred_hub.register_model("pretrained", PretrainedTransformer)

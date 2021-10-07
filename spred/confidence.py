@@ -4,8 +4,6 @@ from torch import tensor
 from torch.nn import functional
 from spred.loss import softmax, gold_values
 from sklearn.neighbors import NearestNeighbors
-from spred.train import BasicTrainer
-from spred.loader import CalibrationLoader, BalancedLoader
 from spred.hub import spred_hub
 
 
@@ -116,7 +114,7 @@ class MCDropoutConfidence(Confidence):
         confs = self.combo_fn(pred_probs)
         return confs
 
-
+"""
 class PosttrainedConfidence(Confidence):
     def __init__(self, task, config, base_model):
         super().__init__()
@@ -134,7 +132,7 @@ class PosttrainedConfidence(Confidence):
             dists = softmax(calibrator_out['outputs'])
             confs = dists[:, -1]
         return confs
-
+"""
 
 class TrustScore(Confidence):
     def __init__(self, k, alpha, max_sample_size=1000):

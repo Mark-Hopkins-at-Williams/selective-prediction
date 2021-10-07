@@ -5,7 +5,6 @@ from numpy.random import multivariate_normal
 from numpy import diag
 from random import shuffle
 from spred.loader import Loader
-from spred.viz import Visualizer
 from spred.task import Task
 from spred.hub import spred_hub
 

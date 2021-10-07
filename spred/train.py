@@ -6,6 +6,7 @@ from tqdm import tqdm
 from spred.loader import CalibrationLoader
 from spred.model import init_model
 from spred.decoder import Decoder
+from spred.confidence import RandomConfidence
 import torch.optim as optim
 from transformers import AdamW
 from transformers import get_scheduler
@@ -38,11 +39,12 @@ class BasicTrainer:
     def init_decoder(self):
         return Decoder(self.include_abstain)
 
-    def init_model(self, output_size=None):
-        if output_size is None:
-            output_size = self.train_loader.num_labels()
-        return init_model(self.config['network'], output_size, self.conf_fn,
-                          self.regularizer, self.include_abstain)
+    def init_model(self):
+        model = init_model(self.config['model'],
+                           self.regularizer,
+                           self.include_abstain)
+        model.set_confidence_extractor(RandomConfidence())
+        return model
 
     def init_optimizer_and_scheduler(self, model):
         def init_optimizer():
@@ -93,7 +95,6 @@ class BasicTrainer:
             eval_result = self.validate_and_analyze(model)
             epoch_result = EpochResult(e, batch_loss, eval_result)
             epoch_results.append(epoch_result)
-            # print(str(epoch_result))
             if eval_result[es_criterion] > top_validation_score: # TODO: what about criteria where smaller=better?
                 top_epoch, top_state_dict = e, deepcopy(model.state_dict())
                 top_validation_score = eval_result[es_criterion]
@@ -101,8 +102,6 @@ class BasicTrainer:
         top_model = self.init_model()
         top_model.load_state_dict(top_state_dict)
         top_model = top_model.to(self.device)
-        # eval_result = self.validate_and_analyze(top_model)
-        # print(str(eval_result))
         return top_model, epoch_results
 
     def epoch_step(self, model):
