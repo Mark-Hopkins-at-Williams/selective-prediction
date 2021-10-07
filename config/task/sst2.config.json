@@ -1,6 +1,8 @@
 {
   "task": {
-    "name": "sst2"
+    "name": "glue",
+    "subtask": "sst2",
+    "tokenizer": "bert-base-cased"
   },
   "network": {
     "architecture": "pretrained",

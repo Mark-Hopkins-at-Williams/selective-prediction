@@ -1,6 +1,8 @@
 {
   "task": {
-    "name": "mrpc"
+    "name": "glue",
+    "subtask": "mrpc",
+    "tokenizer": "bert-base-cased"
   },
   "network": {
     "architecture": "pretrained",
