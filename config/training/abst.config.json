@@ -1,8 +1,8 @@
 {
   "regularizer": {
     "name": "abst",
-    "warmup_epochs": 10,
-    "alpha": 0.02
+    "warmup_epochs": 0,
+    "alpha": 50.0
   },
   "confidences": [
     {

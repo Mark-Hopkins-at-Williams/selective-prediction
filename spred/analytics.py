@@ -227,7 +227,7 @@ def get_loss_abbrev(config):
         elif lconfig['name'] == 'dac':
             return 'dac({},{})'.format(lconfig['alpha_final'], lconfig['alpha_init_factor'])
         else:
-            return None
+            return lconfig['name']
 
 
 def show_training_dashboard(exp_result):

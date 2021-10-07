@@ -1,7 +1,7 @@
 [
   {
-    "task": "mnist",
-    "training": "ce",
+    "task": "normals",
+    "training": "abst",
     "n_trials": 1
   }
 ]
