@@ -1,7 +1,7 @@
 [
   {
     "task": "rte",
-    "training": "mcd",
+    "training": "ce",
     "n_trials": 1
   }
 ]

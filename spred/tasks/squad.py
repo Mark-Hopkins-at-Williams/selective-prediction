@@ -19,7 +19,7 @@ class TokenizerCache:
 tokenizer_cache = TokenizerCache()
 
 
-class GlueLoader(Loader):
+class SquadLoader(Loader):
 
     def __init__(self, dataset, shuffle, bsz, output_sz):
         super().__init__()
@@ -37,7 +37,7 @@ class GlueLoader(Loader):
         return self.output_sz
 
 
-class GlueTask(Task):
+class SquadTask(Task):
 
     def __init__(self, subtask, tokenizer):
         super().__init__()
@@ -66,10 +66,7 @@ class GlueTask(Task):
         cotrain_size = len(train_dataset) - train_size
         self.train, self.cotrain = random_split(train_dataset,
                                                 [train_size, cotrain_size])
-        if self.task_name == "mnli":
-            self.test = tokenized['validation_matched']
-        else:
-            self.test = tokenized['validation']
+        self.test = tokenized['validation']
         label_list = raw_datasets["train"].features["label"].names
         self.output_sz = len(label_list)
 
@@ -94,5 +91,3 @@ class GlueTask(Task):
         return GlueLoader(self.test, shuffle=False, bsz=bsz,
                           output_sz=self.output_size())
 
-
-spred_hub.register_task('glue', GlueTask)
