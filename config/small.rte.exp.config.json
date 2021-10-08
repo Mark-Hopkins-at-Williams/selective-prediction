@@ -1,6 +1,6 @@
 [
   {
-    "task": "rte",
+    "task": "mnli",
     "training": "ce",
     "n_trials": 1
   }
