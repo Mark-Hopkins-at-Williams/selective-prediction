@@ -7,13 +7,7 @@ from torchvision import transforms
 from spred.task import Task
 from spred.model import Feedforward
 from spred.hub import spred_hub
-
-
-
-DATA_DIR = os.getenv('SPRED_DATA').strip()
-MNIST_DIR = join(DATA_DIR, 'mnist')
-MNIST_TRAIN_DIR = join(MNIST_DIR, 'train')
-MNIST_TEST_DIR = join(MNIST_DIR, 'test')
+import tempfile
 
 
 def confuse_none(labels):
@@ -70,14 +64,14 @@ class MnistTask(Task):
     def get_mnist_train():
         transform = transforms.Compose([transforms.ToTensor(),
                                         transforms.Normalize((0.5,), (0.5,))])
-        return datasets.MNIST(MNIST_TRAIN_DIR, download=True,
+        return datasets.MNIST(tempfile.gettempdir(), download=True,
                               train=True, transform=transform)
 
     @staticmethod
     def get_mnist_test():
         transform = transforms.Compose([transforms.ToTensor(),
                                         transforms.Normalize((0.5,), (0.5,))])
-        return datasets.MNIST(MNIST_TEST_DIR, download=True,
+        return datasets.MNIST(tempfile.gettempdir(), download=True,
                               train=False, transform=transform)
 
 

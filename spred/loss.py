@@ -225,6 +225,7 @@ class DACLoss(ConfidenceLoss):
             except RuntimeError as e:
                 print(e)
 
+
 spred_hub.register_loss_fn("ce", CrossEntropyLoss)
 spred_hub.register_loss_fn("ereg", ErrorRegularizer)
 spred_hub.register_loss_fn("dac", DACLoss)

@@ -1,10 +1,10 @@
 {
   "confidences": [
     {
-      "name": "max_prob"
+      "name": "random"
     },
     {
-      "name": "random"
+      "name": "max_prob"
     },
     {
       "name": "ts",

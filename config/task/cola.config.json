@@ -1,10 +1,13 @@
 {
   "task": {
-    "name": "cola"
+    "name": "glue",
+    "subtask": "cola",
+    "tokenizer": "bert-base-cased"
   },
-  "network": {
-    "architecture": "pretrained",
-    "base_model": "bert-base-cased"
+  "model": {
+    "name": "pretrained",
+    "base_model": "bert-base-cased",
+    "output_size": 2
   },
   "optimizer": {
     "name": "adamw",

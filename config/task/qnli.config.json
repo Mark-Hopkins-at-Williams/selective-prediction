@@ -1,7 +1,7 @@
 {
   "task": {
     "name": "glue",
-    "subtask": "qqp",
+    "subtask": "qnli",
     "tokenizer": "bert-base-cased"
   },
   "model": {

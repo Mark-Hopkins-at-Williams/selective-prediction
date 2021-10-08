@@ -1,7 +1,0 @@
-[
-  {
-    "task": "rte",
-    "training": "ts",
-    "n_trials": 10
-  }
-]
