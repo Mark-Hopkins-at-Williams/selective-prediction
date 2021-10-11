@@ -1,6 +1,6 @@
 [
   {
-    "task": "mrpc",
+    "task": "rte",
     "training": "ereg",
     "n_trials": 1
   }
