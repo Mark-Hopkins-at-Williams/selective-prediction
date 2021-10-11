@@ -128,7 +128,7 @@ class PretrainedTransformer(SelectiveModel):
     def forward(self, batch, compute_conf=True, compute_loss=True):
         outputs = self.model(**batch)
         if compute_conf:
-            print(self.confidence_extractor)
+            print(outputs.logits)
             confidence = self.confidence_extractor({'inputs': batch,
                                                     'outputs': outputs.logits}, self.lite_forward)
         else:
