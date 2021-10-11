@@ -90,6 +90,7 @@ class ErrorRegularizer(ConfidenceLoss):
         confidence, base_loss = batch['confidences'], batch['loss']
         probs = softmax(output)
         truthvals = (probs.max(dim=1).indices == gold)
+        print(confidence)
         correct_confs = confidence[truthvals]
         incorrect_confs = confidence[~truthvals]
         diffs = (incorrect_confs.unsqueeze(1) - correct_confs.unsqueeze(0)).view(-1)
