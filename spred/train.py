@@ -43,7 +43,7 @@ class BasicTrainer:
         model = init_model(self.config['model'],
                            self.regularizer,
                            self.include_abstain)
-        model.set_confidence_extractor(RandomConfidence())
+        model.set_confidence_extractor(self.conf_fn)
         return model
 
     def init_optimizer_and_scheduler(self, model):
