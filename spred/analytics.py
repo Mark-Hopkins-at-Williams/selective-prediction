@@ -195,16 +195,24 @@ class ResultDatabase:
         for exp_result in self.results:
             config = exp_result.config
             loss = get_loss_abbrev(config)
-            task = config['task']['name'] if 'task' in config else "-"
+            task = get_task_abbrev(config)
             for j, eval_result in enumerate(exp_result.eval_results):
                 conf_abbrev = get_conf_abbrev(config['confidences'][j])
                 if conf_abbrev != "sum_non_abstain":
-                    data['method'].append(loss + "_" + conf_abbrev)
+                    data['method'].append(loss)
                     data['task'].append(task)
                     for metric_name in eval_result.as_dict():
                         if metric_name not in ['f1', 'matthews_correlation']:
                             data[metric_name].append(eval_result[metric_name])
         return pd.DataFrame(data=dict(data))
+
+
+def get_task_abbrev(config):
+    task = config['task']['name'] if 'task' in config else "-"
+    if task == 'glue':
+        task = config['task']['subtask']
+    return task
+
 
 def get_conf_abbrev(cconfig):
     if cconfig['name'] == 'ts':
@@ -304,7 +312,6 @@ def example_pr_curve2(conf="g1"):
     df = pd.DataFrame(data=d)
     df1 = df[df["confidence"]==conf]
     g = sns.FacetGrid(df1, hue="confidence", height=8)
-    # sns.set(font_scale=3)
     g.map(plt.scatter, "recall", "precision")
     g.map(plt.plot, "recall", "precision")
     g.set(ylim=(-0.01, 1.01))

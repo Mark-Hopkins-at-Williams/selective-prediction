@@ -94,7 +94,8 @@ class ErrorRegularizer(ConfidenceLoss):
         incorrect_confs = confidence[~truthvals]
         diffs = (incorrect_confs.unsqueeze(1) - correct_confs.unsqueeze(0)).view(-1)
         penalty = torch.sum(torch.clamp(diffs, min=0)**2)
-        return base_loss + self.lambda_param * penalty
+        return self.lambda_param * penalty
+        # return base_loss + self.lambda_param * penalty
 
 
 class AbstainingLoss(ConfidenceLoss):

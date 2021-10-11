@@ -1,7 +1,7 @@
 [
   {
-    "task": "mnli",
-    "training": "ce",
+    "task": "mrpc",
+    "training": "ereg",
     "n_trials": 1
   }
 ]
