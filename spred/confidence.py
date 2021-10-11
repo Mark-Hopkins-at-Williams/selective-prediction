@@ -58,6 +58,8 @@ class RandomConfidence(Confidence):
 class MaxProb(Confidence):
     def __call__(self, batch, model=None):
         output = batch['outputs']
+        print("output")
+        print(output)
         probs = functional.softmax(output.clamp(min=-25, max=25), dim=-1)
         return probs.max(dim=1).values
 
