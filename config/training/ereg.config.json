@@ -1,7 +1,7 @@
 {
   "regularizer": {
     "name": "ereg",
-    "lambda_param": 0.01
+    "lambda_param": 0.05
   },
   "confidences": [
     {
