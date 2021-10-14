@@ -1,0 +1,7 @@
+[
+  {
+    "task": "qnli",
+    "training": "ce",
+    "n_trials": 1
+  }
+]
