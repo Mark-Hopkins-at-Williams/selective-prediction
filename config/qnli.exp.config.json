@@ -2,6 +2,16 @@
   {
     "task": "qnli",
     "training": "ce",
-    "n_trials": 1
+    "n_trials": 10
+  },
+  {
+    "task": "qnli",
+    "training": "dac",
+    "n_trials": 10
+  },
+  {
+    "task": "qnli",
+    "training": "ereg",
+    "n_trials": 10
   }
 ]
