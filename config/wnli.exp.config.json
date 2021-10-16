@@ -1,0 +1,17 @@
+[
+  {
+    "task": "wnli",
+    "training": "ce",
+    "n_trials": 10
+  },
+  {
+    "task": "wnli",
+    "training": "dac",
+    "n_trials": 10
+  },
+  {
+    "task": "wnli",
+    "training": "ereg",
+    "n_trials": 10
+  }
+]
