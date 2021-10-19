@@ -1,17 +1,12 @@
 [
   {
     "task": "mnli",
-    "training": "ce",
-    "n_trials": 9
-  },
-  {
-    "task": "mnli",
-    "training": "dac",
+    "training": "ereg",
     "n_trials": 10
   },
   {
     "task": "mnli",
-    "training": "ereg",
+    "training": "dac",
     "n_trials": 10
   }
 ]
