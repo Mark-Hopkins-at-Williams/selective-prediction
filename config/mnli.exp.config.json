@@ -1,16 +1,6 @@
 [
   {
     "task": "mnli",
-    "training": "ereg",
-    "n_trials": 10
-  },
-  {
-    "task": "mnli",
-    "training": "dac",
-    "n_trials": 10
-  },
-  {
-    "task": "mnli",
     "training": "ce",
     "n_trials": 10
   }
