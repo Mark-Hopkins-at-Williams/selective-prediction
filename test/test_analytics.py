@@ -4,6 +4,8 @@ import json
 from spred.evaluate import Evaluator
 from spred.analytics import EvaluationResult, EpochResult
 from spred.analytics import ExperimentResult, ResultDatabase
+from spred.analytics import compete, create_versus_df
+import pandas as pd
 
 
 def compare(a1, a2, num_decimal_places=4):
@@ -24,6 +26,7 @@ class TestEvaluator(unittest.TestCase):
                        {'gold': 2, 'pred': 2, 'confidence': 0.7, 'abstain': False},
                        {'gold': 3, 'pred': 3, 'confidence': 0.9, 'abstain': False}]
 
+    """
     def test_evaluation_result_serialization(self):
         evaluator = Evaluator(self.preds1)
         result = evaluator.get_result().as_dict()
@@ -36,6 +39,7 @@ class TestEvaluator(unittest.TestCase):
         assert result == expected
         result2 = EvaluationResult(expected)
         assert result2.as_dict() == expected
+    """
 
     def test_evaluation_result_averaging(self):
         result1 = EvaluationResult({'train_loss': 1, 'avg_err_conf': 2,
@@ -91,6 +95,21 @@ class TestEvaluator(unittest.TestCase):
                                             'avg_crr_conf': 5.0, 'auroc': 6.0})
         expected = EpochResult(3.0, 2.0, avg_eval_result)
         assert avg == expected
+
+    def test_versus1(self):
+        d = {'method': ['m1', 'm1', 'm1', 'm1',
+                        'm2', 'm2', 'm2', 'm2',
+                        'm3', 'm3', 'm3', 'm3'],
+             'task': ['t1', 't1', 't2', 't2',
+                      't1', 't1', 't2', 't2',
+                      't1', 't1', 't2', 't2'],
+             'my_score': [0.5, 0.6, 0.7, 0.8,
+                        0.6, 0.7, 0.8, 0.9,
+                        0.4, 0.5, 0.6, 0.7]}
+        # df = pd.DataFrame(data=d)
+        # print(df)
+        # print(compete(df, 'metric', 'm1', 'm3'))
+        # print(create_versus_df(df, 'my_score', 'm1', ['m2', 'm3']))
 
 
 if __name__ == "__main__":

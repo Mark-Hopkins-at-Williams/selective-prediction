@@ -12,7 +12,7 @@ from statistics import mean
 from collections import defaultdict
 from statistics import median
 from datasets import load_metric
-
+from random import shuffle
 
 class EvaluationResult:
     def __init__(self, result_dict):
@@ -191,6 +191,13 @@ class ResultDatabase:
         return ExperimentResult(exp_results[0].config, avg_epoch_results, avg_conf_results)
 
     def as_dataframe(self):
+        methods = ['basic (max_prob)',
+                   'ereg (max_prob)',
+                   'dac (max_prob)',
+                   'basic (trustscore)',
+                   'basic (mcdm)',
+                   'basic (mcdv)',
+                   'basic (random)']
         data = defaultdict(list)
         for exp_result in self.results:
             config = exp_result.config
@@ -198,12 +205,15 @@ class ResultDatabase:
             task = get_task_abbrev(config)
             for j, eval_result in enumerate(exp_result.eval_results):
                 conf_abbrev = get_conf_abbrev(config['confidences'][j])
-                #if conf_abbrev != "sum_non_abstain":
-                data['method'].append(loss + "_" + conf_abbrev)
-                data['task'].append(task)
-                for metric_name in eval_result.as_dict():
-                    if metric_name not in ['f1', 'matthews_correlation']:
-                        data[metric_name].append(eval_result[metric_name])
+                method_abbrev = loss + " (" + conf_abbrev + ")"
+                if method_abbrev in methods:
+                    data['loss'].append(loss)
+                    data['method'].append(method_abbrev)
+                    data['task'].append(task)
+                    data['method_task'].append(loss + "_" + conf_abbrev + "_" + task)
+                    for metric_name in eval_result.as_dict():
+                        if metric_name not in ['f1', 'matthews_correlation']:
+                            data[metric_name].append(eval_result[metric_name])
         return pd.DataFrame(data=dict(data))
 
 
@@ -216,24 +226,31 @@ def get_task_abbrev(config):
 
 def get_conf_abbrev(cconfig):
     if cconfig['name'] == 'ts':
-        return 'ts({}, {})'.format(cconfig['alpha'], cconfig['max_sample_size'])
+        return 'trustscore'
+        # return 'ts({}, {})'.format(cconfig['alpha'], cconfig['max_sample_size'])
     elif cconfig['name'] == 'mcd':
         if cconfig['aggregator'] == "mean":
-            return 'mcdm({})'.format(cconfig['n_forward_passes'])
+            return 'mcdm'
+            # return 'mcdm({})'.format(cconfig['n_forward_passes'])
         elif cconfig['aggregator'] == "negvar":
-            return 'mcdv({})'.format(cconfig['n_forward_passes'])
+            return 'mcdv'
+            # return 'mcdv({})'.format(cconfig['n_forward_passes'])
+    elif cconfig['name'] == 'max_non_abstain':
+        return 'max_prob'
     else:
         return cconfig['name']
 
 def get_loss_abbrev(config):
     if 'regularizer' not in config:
-        return 'base'
+        return 'basic'
     else:
         lconfig = config['regularizer']
         if lconfig['name'] == 'ereg':
-            return 'ereg({})'.format(lconfig['lambda_param'])
+            return 'ereg'
+            # return 'ereg({})'.format(lconfig['lambda_param'])
         elif lconfig['name'] == 'dac':
-            return 'dac({},{})'.format(lconfig['alpha_final'], lconfig['alpha_init_factor'])
+            return 'dac'
+            # return 'dac({},{})'.format(lconfig['alpha_final'], lconfig['alpha_init_factor'])
         else:
             return lconfig['name']
 
@@ -274,11 +291,72 @@ def plot_training_metric(exp_results, metric_name):
     plt.xlabel('epoch')
     plt.show()
 
-
 def plot_evaluation_metric(result_db, metric_name):
+    order = ['basic (max_prob)',
+             'ereg (max_prob)',
+             'dac (max_prob)',
+             'basic (mcdm)',
+             'basic (mcdv)',
+             'basic (trustscore)',
+             'basic (random)']
     df = result_db.as_dataframe()
     sns.set_theme(style="whitegrid")
-    sns.violinplot(y="method", x=metric_name, hue="task", data=df, orient="h", inner="stick")
+    sns.violinplot(y="method", x=metric_name, hue="task",
+                   data=df, orient="h", inner="stick", order=order)
+    plt.gcf().subplots_adjust(left=0.35)
+    plt.show()
+
+
+def compete(df, metric_name, method1, baseline):
+    df1 = df[df['method']==method1]
+    df2 = df[df['method']==baseline]
+    df1 = df1[['task', metric_name]]
+    df2 = df2[['task', metric_name]]
+    results1 = defaultdict(list)
+    for (task, value) in df1.values.tolist():
+        results1[task].append(value)
+    results2 = defaultdict(list)
+    for (task, value) in df2.values.tolist():
+        results2[task].append(value)
+    results1 = dict(results1)
+    results2 = dict(results2)
+    differences = []
+    for key in results1:
+        values1, values2 = results1[key], results2[key]
+        shuffle(values1)
+        shuffle(values2)
+        min_length = min(len(values1), len(values2))
+        values1 = values1[:min_length]
+        values2 = values2[:min_length]
+        for v1, v2 in zip(values1, values2):
+            # differences.append(v1 - v2)
+            differences.append(int(v1>v2))
+    compete_df = pd.DataFrame(data={'versus {}'.format(baseline): [method1] * len(differences),
+                                    'likelihood of improved {}'.format(metric_name): differences})
+    return compete_df
+
+def create_versus_df(result_df, metric_name, baseline, methods):
+    sub_dfs = []
+    for method in methods:
+        sub_dfs.append(compete(result_df, metric_name, method, baseline))
+    return pd.concat(sub_dfs)
+
+
+def viz_versus(result_db, metric_name):
+    baseline = 'basic (max_prob)'
+    methods = ['basic (mcdv)',
+               'basic (mcdm)',
+               'ereg (max_prob)',
+               'dac (max_prob)',
+               'basic (trustscore)',
+               'basic (random)']
+    result_df = result_db.as_dataframe()
+    versus_df = create_versus_df(result_df, metric_name, baseline, methods)
+    sns.set_theme(style="whitegrid")
+    sns.pointplot(y="versus {}".format(baseline),
+                  x='likelihood of improved {}'.format(metric_name),
+                  data=versus_df, orient="h", join=False,
+                  order=methods)
     plt.gcf().subplots_adjust(left=0.35)
     plt.show()
 
@@ -325,11 +403,10 @@ def get_dataframe(directory):
 
 def main(directory, metric_name):
     result_db = ResultDatabase.load(directory)
-    plot_evaluation_metric(result_db, metric_name)
-
+    # plot_evaluation_metric(result_db, metric_name)
+    viz_versus(result_db, metric_name)
 
 if __name__ == '__main__':
-    i = 1
     direc = sys.argv[1]
     metric = sys.argv[2]
     main(direc, metric)

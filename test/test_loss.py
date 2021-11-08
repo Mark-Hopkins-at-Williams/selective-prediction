@@ -36,7 +36,7 @@ def example_batch2():
     close_enough(softmax(outputs), tensor([[0.0871, 0.0321, 0.2369, 0.6439],
                                            [0.0321, 0.2369, 0.6439, 0.0871]]))
     close_enough(confs, tensor([0.6439, 0.6439]))
-    batch = {'outputs': outputs, 'labels': labels, 'confidences': confs}
+    batch = {'outputs': outputs, 'labels': labels, 'confidences': confs, 'loss': 1.0}
     return batch
 
 def example_batch3():
@@ -82,29 +82,22 @@ class TestLoss(unittest.TestCase):
         loss_function = AbstainingLoss(alpha=alpha, warmup_epochs=3)
         loss_function.notify(4)
         loss = loss_function(batch)
-        expected = (-log(0.2369 + alpha * 0.6439) +
-                    -log(0.0321 + alpha * 0.0871)) / 2
-        close_enough(loss, tensor(expected))
+        expected = (-log(alpha * 0.6439) +
+                    -log(alpha * 0.0871)) / 2
+        close_enough(loss, tensor(1.0 + expected))
 
-    """
     def test_dac_loss(self):
-        loss_function = DACLoss(warmup_epochs=5,
-                                total_epochs=15, alpha_init_factor=64.0)
-        predictions = tensor([[-1., -2., 0., 1.],
-                              [-2., 0., 1., -1.]])
-        close_enough(softmax(predictions), tensor([[0.0871, 0.0321, 0.2369, 0.6439],
-                                                   [0.0321, 0.2369, 0.6439, 0.0871]]))
-        gold = torch.tensor([2, 0])
-        loss_function.notify(8)
-        loss = loss_function(predictions, None, gold)
-        # expected = (-log(0.2369 + alpha * 0.6439) +
-        #             -log(0.0321 + alpha * 0.0871)) / 2
+        batch = example_batch2()
+        loss_function = DACLoss(warmup_epochs=5)
         ce = CrossEntropyLoss()
-        ce_loss = ce(predictions, None, gold)
-        # print("DAC Loss: {}".format(loss))
-        # print("CE Loss:  {}".format(ce_loss))
-        # close_enough(loss, tensor(expected))
-    """
+        ce_loss = ce(batch)
+        loss_function.notify(3)
+        loss = loss_function(batch)
+        close_enough(loss, ce_loss)
+        loss_function.notify(8)
+        loss = loss_function(batch)
+        close_enough(loss, tensor(1.615211))
+
 
 if __name__ == "__main__":
     unittest.main()

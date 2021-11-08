@@ -8,7 +8,7 @@ class TestDecoder(unittest.TestCase):
 
     def test_interface_a_decoder(self):
         net = build_interface_a_net()
-        decoder = Decoder()
+        decoder = Decoder(include_abstain_output=False)
         loader = ExampleFeedforwardLoader()
         decoded = decoder(net, loader)
         result = []

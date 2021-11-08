@@ -143,8 +143,8 @@ class TestEvaluator(unittest.TestCase):
         result = {k: round(result[k], 4) if result[k] is not None else None
                   for k in result}
         expected = {'accuracy': 0.6, 'f1': 0.75, 'validation_loss': None,
-                    'n_errors': 4, 'n_correct': 6, 'n_published': 10,
-                    'avg_crr_conf': 0.38, 'avg_err_conf': 0.17,
+                    'n_errors': 4, 'n_correct': 6, 'avg_non_abstain': 1.0,
+                    'avg_crr_conf': 0.6333, 'avg_err_conf': 0.425,
                     'kendall_tau': 0.2917, 'capacity': 0.8019, 'aupr': 0.8627,
                     'auroc': 0.7083}
         assert result == expected
