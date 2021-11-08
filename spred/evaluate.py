@@ -49,7 +49,10 @@ class AverageNonabstainProb(EvaluationStatistic):
 
     def notify(self, pred):
         self.denominator += 1
-        self.numerator += pred['non_abstain_prob']
+        if 'abstain' in pred and pred['abstain']:
+            self.numerator += pred['non_abstain_prob']
+        else:
+            self.numerator += 1.0
         self.stat = self.numerator / self.denominator
 
 

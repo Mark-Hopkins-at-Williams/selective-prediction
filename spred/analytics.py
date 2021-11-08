@@ -191,13 +191,6 @@ class ResultDatabase:
         return ExperimentResult(exp_results[0].config, avg_epoch_results, avg_conf_results)
 
     def as_dataframe(self):
-        methods = ['basic (max_prob)',
-                   'ereg (max_prob)',
-                   'dac (max_prob)',
-                   'basic (trustscore)',
-                   'basic (mcdm)',
-                   'basic (mcdv)',
-                   'basic (random)']
         data = defaultdict(list)
         for exp_result in self.results:
             config = exp_result.config
@@ -206,14 +199,13 @@ class ResultDatabase:
             for j, eval_result in enumerate(exp_result.eval_results):
                 conf_abbrev = get_conf_abbrev(config['confidences'][j])
                 method_abbrev = loss + " (" + conf_abbrev + ")"
-                if method_abbrev in methods:
-                    data['loss'].append(loss)
-                    data['method'].append(method_abbrev)
-                    data['task'].append(task)
-                    data['method_task'].append(loss + "_" + conf_abbrev + "_" + task)
-                    for metric_name in eval_result.as_dict():
-                        if metric_name not in ['f1', 'matthews_correlation']:
-                            data[metric_name].append(eval_result[metric_name])
+                data['loss'].append(loss)
+                data['method'].append(method_abbrev)
+                data['task'].append(task)
+                data['method_task'].append(loss + "_" + conf_abbrev + "_" + task)
+                for metric_name in eval_result.as_dict():
+                    if metric_name not in ['f1', 'matthews_correlation']:
+                        data[metric_name].append(eval_result[metric_name])
         return pd.DataFrame(data=dict(data))
 
 
@@ -292,17 +284,10 @@ def plot_training_metric(exp_results, metric_name):
     plt.show()
 
 def plot_evaluation_metric(result_db, metric_name):
-    order = ['basic (max_prob)',
-             'ereg (max_prob)',
-             'dac (max_prob)',
-             'basic (mcdm)',
-             'basic (mcdv)',
-             'basic (trustscore)',
-             'basic (random)']
     df = result_db.as_dataframe()
     sns.set_theme(style="whitegrid")
     sns.violinplot(y="method", x=metric_name, hue="task",
-                   data=df, orient="h", inner="stick", order=order)
+                   data=df, orient="h", inner="stick")
     plt.gcf().subplots_adjust(left=0.35)
     plt.show()
 
