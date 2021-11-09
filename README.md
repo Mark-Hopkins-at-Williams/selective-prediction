@@ -1,5 +1,5 @@
-Selective Prediction
---------------------
+spred (a python package for selective prediction)
+-------------------------------------------------
 
 ## Installing the spred package:
 
