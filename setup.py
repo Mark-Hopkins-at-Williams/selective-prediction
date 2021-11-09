@@ -4,7 +4,7 @@ setup(name='spred',
       version='1.0',
       packages=find_packages(),
       install_requires=[
-          'torch==1.9.0',
+          'torch',
           'torchvision==0.10.0',
           'transformers==4.10.0',
           'sklearn',
