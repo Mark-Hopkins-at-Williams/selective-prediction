@@ -1,4 +1,5 @@
 import json
+import time
 import spred.tasks.normals
 from spred.tasks import *
 from spred.hub import spred_hub
@@ -41,13 +42,14 @@ class Experiment:
             if self.config['regularizer']['name'] == 'dac':
                 training_conf_fn = MaxNonabstainProb()
         trainer = self.init_trainer(training_conf_fn)
-        model, training_result = trainer()
+        model, training_result, training_time = trainer()
         if 'evaluation' in self.config and self.config['evaluation'] == 'validation':
             eval_loader = self.validation_loader
         else:
             eval_loader = self.test_loader
         eval_results = []
         for confidence_config in self.config['confidences']:
+            start_time = time.time()
             conf_constructor = spred_hub.get_confidence_fn(confidence_config['name'])
             params = {k: confidence_config[k] for k in confidence_config if k != "name"}
             conf_fn = conf_constructor(**params)
@@ -55,10 +57,12 @@ class Experiment:
             model.set_confidence_extractor(conf_fn)
             task_name = self.config['task']['name'] if 'task' in self.config else None
             result = validate_and_analyze(model, eval_loader, task_name=task_name)
+            elapsed_time = time.time() - start_time
+            result.record_elapsed_time(elapsed_time)
             eval_results.append(result)
             print(confidence_config)
             print(result)
-        return ExperimentResult(self.config, training_result, eval_results)
+        return ExperimentResult(self.config, training_result, eval_results, training_time)
 
     @classmethod
     def from_json(cls, model_config_path, train_config_path):

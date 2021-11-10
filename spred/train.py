@@ -1,3 +1,4 @@
+import time
 from spred.analytics import ExperimentResult, EpochResult
 from spred.evaluate import Evaluator
 from copy import deepcopy
@@ -77,6 +78,7 @@ class BasicTrainer:
         init_scheduler()
 
     def __call__(self):
+        start_time = time.time()
         print("Training with config:")
         print(self.config)
         model = self.init_model()
@@ -102,7 +104,8 @@ class BasicTrainer:
         top_model = self.init_model()
         top_model.load_state_dict(top_state_dict)
         top_model = top_model.to(self.device)
-        return top_model, epoch_results
+        elapsed_time = time.time() - start_time
+        return top_model, epoch_results, elapsed_time
 
     def epoch_step(self, model):
         running_loss = 0.

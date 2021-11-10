@@ -35,6 +35,9 @@ class EvaluationResult:
     def as_dict(self):
         return self.result_dict
 
+    def record_elapsed_time(self, elapsed_time):
+        self.result_dict['elapsed_time'] = elapsed_time
+
     def __eq__(self, other):
         return self.result_dict == other.result_dict
 
@@ -125,23 +128,25 @@ class EpochResult:
 
 class ExperimentResult:
 
-    def __init__(self, config, epoch_results, eval_results):
+    def __init__(self, config, epoch_results, eval_results, training_time):
         self.config = config
         self.epoch_results = epoch_results
         self.eval_results = eval_results
+        self.training_time = training_time
 
     def as_dict(self):
         epoch_results_json = [result.as_dict() for result in self.epoch_results]
         eval_results_json = [result.as_dict() for result in self.eval_results]
         return {'config': self.config,
                 'training_results': epoch_results_json,
+                'training_time': self.training_time,
                 'confidence_results': eval_results_json}
 
     @classmethod
     def from_dict(cls, d):
         epoch_results = [EpochResult.from_dict(result) for result in d['training_results']]
         eval_results = [EvaluationResult(result) for result in d['confidence_results']]
-        return cls(d['config'], epoch_results, eval_results)
+        return cls(d['config'], epoch_results, eval_results, d['training_time'])
 
     def __str__(self):
         return json.dumps(self.as_dict(), indent=4, sort_keys=True)
@@ -202,7 +207,6 @@ class ResultDatabase:
                 data['loss'].append(loss)
                 data['method'].append(method_abbrev)
                 data['task'].append(task)
-                data['method_task'].append(loss + "_" + conf_abbrev + "_" + task)
                 for metric_name in eval_result.as_dict():
                     if metric_name not in ['f1', 'matthews_correlation']:
                         data[metric_name].append(eval_result[metric_name])
@@ -285,6 +289,9 @@ def plot_training_metric(exp_results, metric_name):
 
 def plot_evaluation_metric(result_db, metric_name):
     df = result_db.as_dataframe()
+    with open('final_results.csv', 'w') as writer:
+        df = df.sort_values(by=['method'])
+        writer.write(df.to_csv(index=False))
     sns.set_theme(style="whitegrid")
     sns.violinplot(y="method", x=metric_name, hue="task",
                    data=df, orient="h", inner="stick")
@@ -388,8 +395,8 @@ def get_dataframe(directory):
 
 def main(directory, metric_name):
     result_db = ResultDatabase.load(directory)
-    # plot_evaluation_metric(result_db, metric_name)
-    viz_versus(result_db, metric_name)
+    plot_evaluation_metric(result_db, metric_name)
+    # viz_versus(result_db, metric_name)
 
 if __name__ == '__main__':
     direc = sys.argv[1]
