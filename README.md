@@ -22,7 +22,6 @@ You can validate your installation by running a basic experiment on MNIST:
 Some other example experiment configuration files are found in 
 the `config` directory.
 
-https://reed-edu.zoom.us/j/93658144530
 ## Testing
 ### To run all unit tests
 

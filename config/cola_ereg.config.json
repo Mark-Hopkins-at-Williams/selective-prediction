@@ -1,0 +1,12 @@
+[
+  {
+    "task": "cola",
+    "training": "ereg",
+    "n_trials": 10
+  },
+  {
+    "task": "cola4",
+    "training": "ereg",
+    "n_trials": 10
+  }
+]
