@@ -1,0 +1,27 @@
+[
+  {
+    "task": "mrpc16",
+    "training": "ereg",
+    "n_trials": 10
+  },
+  {
+    "task": "mnli16",
+    "training": "ereg",
+    "n_trials": 10
+  },
+  {
+    "task": "rte16",
+    "training": "ereg",
+    "n_trials": 10
+  },
+  {
+    "task": "qnli216",
+    "training": "ereg",
+    "n_trials": 10
+  },
+  {
+    "task": "sst216",
+    "training": "ereg",
+    "n_trials": 10
+  }
+]

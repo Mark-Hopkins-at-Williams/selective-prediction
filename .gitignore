@@ -8,3 +8,4 @@ results/
 spred/mnist/data/
 spred/mnist/saved/
 docs/.ipynb_checkpoints
+.eggs

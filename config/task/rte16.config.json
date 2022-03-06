@@ -1,0 +1,22 @@
+{
+  "task": {
+    "name": "glue",
+    "subtask": "rte",
+    "tokenizer": "bert-base-cased"
+  },
+  "model": {
+    "name": "pretrained",
+    "base_model": "bert-base-cased",
+    "output_size": 2
+  },
+  "optimizer": {
+    "name": "adamw",
+    "lr": 5e-5
+  },
+  "scheduler": {
+    "name": "linear"
+  },
+  "bsz": 16,
+  "n_epochs": 6
+}
+

@@ -199,6 +199,7 @@ class ResultDatabase:
         data = defaultdict(list)
         for exp_result in self.results:
             config = exp_result.config
+            print(config)
             loss = get_loss_abbrev(config)
             task = get_task_abbrev(config)
             for j, eval_result in enumerate(exp_result.eval_results):
@@ -242,8 +243,10 @@ def get_loss_abbrev(config):
     else:
         lconfig = config['regularizer']
         if lconfig['name'] == 'ereg':
-            return 'ereg'
+
+            # return 'ereg'
             # return 'ereg({})'.format(lconfig['lambda_param'])
+            return 'ereg({})'.format(config['bsz'])
         elif lconfig['name'] == 'dac':
             return 'dac'
             # return 'dac({},{})'.format(lconfig['alpha_final'], lconfig['alpha_init_factor'])
