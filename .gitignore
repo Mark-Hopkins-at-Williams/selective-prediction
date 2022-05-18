@@ -13,4 +13,6 @@ docs/*/*.bbl
 docs/*/*.idx
 docs/*/*.ind
 docs/*/*.pdf
+.texpadtmp
 .DS_Store
+
