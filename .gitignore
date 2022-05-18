@@ -9,3 +9,8 @@ spred/mnist/data/
 spred/mnist/saved/
 docs/.ipynb_checkpoints
 .eggs
+docs/*/*.bbl
+docs/*/*.idx
+docs/*/*.ind
+docs/*/*.pdf
+.DS_Store
