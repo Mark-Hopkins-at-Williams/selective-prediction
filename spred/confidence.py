@@ -148,7 +148,8 @@ class MCDropoutConfidence(Confidence):
 
 class TrustScore(Confidence):
     """
-    (See: https://arxiv.org/abs/1805.11783)
+    (See: https://arxiv.org/abs/1805.11783,
+     code adopted from https://github.com/google/TrustScore/blob/master/trustscore/trustscore.py)
     a nearest-neighbor
     based confidence function. First, the training in
     stances are converted4 into vector encodings, and
