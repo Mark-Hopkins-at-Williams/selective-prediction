@@ -1,3 +1,13 @@
+"""
+```evaluate.py``` implements evaluation metrics based on an abstract class ```EvaluationStatistic```.
+```EvaluationStatistic``` interacts with ```Trainer``` or ```Evaluator``` through ```notify``` and ```notify_batch```.
+Predictions made by the model are passed to the ```EvaluationStatistic``` metric so that the ```EvaluationStatistic```
+object can update the metric.
+
+```EvaluationStatistic``` also defines ```__call__``` method that return relevant data for other usages.
+
+"""
+
 import os
 import sys
 import numpy as np
@@ -14,6 +24,10 @@ from spred.analytics import EvaluationResult
 
 
 class EvaluationStatistic(ABC):
+    """
+    Abstract class for all evaluation metrics
+
+    """
     def __init__(self):
         self.stat = 0
 
@@ -29,18 +43,30 @@ class EvaluationStatistic(ABC):
 
 
 class ErrorCount(EvaluationStatistic):
+    """
+    Number of errors in predictions
+
+    """
     def notify(self, pred):
         if pred['pred'] != pred['gold']:
             self.stat += 1
 
 
 class CorrectCount(EvaluationStatistic):
+    """
+    Number of correct predictions
+
+    """
     def notify(self, pred):
         if pred['pred'] == pred['gold']:
             self.stat += 1
 
 
 class AverageNonabstainProb(EvaluationStatistic):
+    """
+    Average non-abstention probability
+
+    """
 
     def __init__(self):
         super().__init__()
@@ -57,6 +83,10 @@ class AverageNonabstainProb(EvaluationStatistic):
 
 
 class AverageErrorConfidence(EvaluationStatistic):
+    """
+    Average error confidence
+
+    """
     def __init__(self):
         super().__init__()
         self.numerator = 0.0
@@ -71,6 +101,10 @@ class AverageErrorConfidence(EvaluationStatistic):
 
 
 class AverageCorrectConfidence(EvaluationStatistic):
+    """
+    Average confidence of correct predictions
+
+    """
     def __init__(self):
         super().__init__()
         self.numerator = 0.0
@@ -85,6 +119,10 @@ class AverageCorrectConfidence(EvaluationStatistic):
 
 
 class Accuracy(EvaluationStatistic):
+    """
+    Accuracy
+
+    """
     def __init__(self):
         super().__init__()
         self.numerator = 0.0
@@ -98,6 +136,10 @@ class Accuracy(EvaluationStatistic):
 
 
 class GlueMetric(EvaluationStatistic):
+    """
+    GLUE score
+
+    """
     def __init__(self, task_name):
         super().__init__()
         self.use_glue = (task_name in {'cola', 'sst-2', 'mrpc', 'qqp', 'mnli',
@@ -122,6 +164,10 @@ class GlueMetric(EvaluationStatistic):
 
 
 class PRCurve(EvaluationStatistic):
+    """
+    Precision-Recall Curve
+
+    """
     def __init__(self):
         super().__init__()
         self.confs = []
@@ -142,6 +188,10 @@ class PRCurve(EvaluationStatistic):
 
 
 class RocCurve(EvaluationStatistic):
+    """
+    Receiver-Operator Characterisitics Curve
+
+    """
     def __init__(self):
         super().__init__()
         self.confs = []
@@ -162,6 +212,10 @@ class RocCurve(EvaluationStatistic):
 
 
 class RiskCoverageCurve(EvaluationStatistic):
+    """
+    Risk-Coverage Curve
+
+    """
     def __init__(self):
         super().__init__()
         self.confs = []
@@ -192,6 +246,10 @@ class RiskCoverageCurve(EvaluationStatistic):
 
 
 class KendallTau(EvaluationStatistic):
+    """
+    Kendall-Tau Distance
+
+    """
     def __init__(self):
         super().__init__()
         self.confs = []
@@ -241,7 +299,13 @@ class KendallTau(EvaluationStatistic):
 
 
 class Evaluator:
-
+    """
+    ```Evaluator``` compiles ```EvaluationStatistic```'s and initilize it with predictions.
+    Statistics are computed accordingly. One can access those statistics through the ```__getitem__``` by their name,
+    and return the statistics in dictionary form with the function ```get_result```. There are two more methods:
+    - ```loss```: return the average prediction loss
+    - ```num_predictions```: return the total number of predictions passed to the evaluator
+    """
     def __init__(self, predictions, validation_loss=None, task_name=None):
         self.stat_map = {'n_errors': ErrorCount(),
                          'n_correct': CorrectCount(),

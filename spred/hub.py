@@ -1,3 +1,12 @@
+"""
+```Hub``` centralizes the Experiment configuration processes:
+- loss function configuration
+- confidence function config
+- model configuration
+
+The process is centralized in one ```Hub``` object, ```spred_hub```.
+
+"""
 from abc import ABC, abstractmethod
 
 

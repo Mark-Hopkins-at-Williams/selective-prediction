@@ -1,3 +1,8 @@
+"""
+```loader.py``` defines the dataloaders for the project
+
+"""
+
 from abc import ABC, abstractmethod
 import torch
 from torch import tensor
@@ -5,6 +10,10 @@ import random
 
 
 class Loader(ABC):
+    """
+    Dataloader abstract class
+
+    """
     @abstractmethod
     def __iter__(self):
         """
@@ -31,7 +40,18 @@ class Loader(ABC):
 
 
 class CalibrationLoader(Loader):
+    """
+    ```CalibrationLoader``` is constructed with a ```predictor```, which is used to generate binary
+    labels of whether the prediction are correct.
+
+    """
     def __init__(self, predictor, base_loader):
+        """
+        Params:
+        ```predictor```, the model that generate predictions
+        ```base_loader```, the dataloader that provides the raw data
+
+        """
         super().__init__()
         self.predictor = predictor
         self.base_loader = base_loader
@@ -58,7 +78,17 @@ class CalibrationLoader(Loader):
 
 
 class BalancedLoader(Loader):
+    """
+    ```BalancedLoader``` yields batches of examples with balanced label counts.
+    Supposed we have a binary classification task. the number of examples with label '0' in the batch
+    will be the same as the number of examples with label '1'.
+
+    """
     def __init__(self, base_loader):
+        """
+        ```base_loader```: the loader that provides raw data
+        
+        """
         self.base_loader = base_loader
 
     def __iter__(self):

@@ -1,3 +1,10 @@
+"""
+Decoder.py includes the Inferential functionalities of the package. The ```Decoder``` class
+configures the selective prediction process and is able to return relevant model outputs upon
+request
+
+"""
+
 import torch
 from torch.nn import functional
 from tqdm import tqdm
@@ -7,6 +14,11 @@ from spred.util import softmax
 
 
 def validate_and_analyze(model, validation_loader, task_name=None):
+    """
+    This function takes a model, and validation dataloader, and configures the
+    conrresponding ```Evaluator``` to the task.
+
+    """
     decoder = Decoder(model.include_abstain())
     model.eval()
     results = list(decoder(model, validation_loader))
@@ -16,18 +28,44 @@ def validate_and_analyze(model, validation_loader, task_name=None):
 
 
 class Decoder:
+    """
+    Decoder implements the relevent functionalities needed for selective inference.
+    See the comment on each method for details.
+
+    """
 
     def __init__(self, include_abstain_output):
+        """
+        Configures whether the model runs on GPU or CPU and whether the model has
+        an abstention output
+
+        """
         self.device = (torch.device("cuda") if torch.cuda.is_available()
                        else torch.device("cpu"))
         self.include_abstain_output = include_abstain_output
 
     def get_loss(self):
+        """
+        Decoder keeps track of the running loss during validation
+        This function returns the average running loss
+
+        """
         if self.running_loss_denom == 0:
             return None
         return self.running_loss_total / self.running_loss_denom
 
     def make_predictions(self, outputs, labels, conf):
+        """
+        This function returns a dictionary of features extracted from a selective predictor, which includes
+        - ```pred```: the index corresponding to the predicted class
+        - ```gold```: the ground truth
+        - ```confidence```: the confidence scores
+        - ```non_abstain_prob```: this field has value 1 unless ```non_abstain_prob``` is ```True```.
+                                  ```non_abstain_prob``` should only be set to `True` if the you are using
+                                  the 1's complement of the abstention output as confidence. In that case,
+                                  use this field as the confidence score.
+        
+        """
         if not self.include_abstain_output:
             preds = outputs.argmax(dim=1)
             for p, g, c in zip(preds, labels, conf):
@@ -47,6 +85,11 @@ class Decoder:
                 yield result
 
     def __call__(self, model, data, loss_f=None):
+        """
+        Take a model and dataloader, return the ```make_prediction``` dictionary
+        from the model output on the loader examples
+
+        """
         self.running_loss_total = 0.0
         self.running_loss_denom = 0
         for batch in tqdm(data, total=len(data)):
