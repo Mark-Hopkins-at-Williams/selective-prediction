@@ -2,6 +2,12 @@ from abc import ABC, abstractmethod
 
 
 class Task(ABC):
+    """
+    The abstract class for tasks (e.g. Mnist, GLUE)
+    Configures data loaders that is compatible for the task
+    contains information for the size of the output logits (```output_size```)
+    
+    """
     def __init__(self):
         self.output_sz = None
 

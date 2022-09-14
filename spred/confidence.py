@@ -50,6 +50,11 @@ class Confidence:
 
 
 class RandomConfidence(Confidence):
+    """
+    The confidence for each example is a uniformly generated value in ```[0, 1]```
+
+    """
+
     def __call__(self, batch, model=None):
         output = batch['outputs']
         return torch.rand(output.shape[0])
@@ -63,6 +68,12 @@ class MaxProb(Confidence):
 
 
 class ProbabilityDifference(Confidence):
+    """
+    The confidence for each example is the difference between the highest softmax probality
+    and the next highest softmax probability
+
+    """
+
     def __call__(self, batch, model=None):
         def second_highest(t):
             indices = t.max(dim=1).indices.unsqueeze(dim=1)
@@ -76,6 +87,12 @@ class ProbabilityDifference(Confidence):
 
 
 class MaxNonabstainProb(Confidence):
+    """
+    returns the highest softmax probablity excluding the probability associated
+    with the abstention output
+
+    """
+
     def __call__(self, batch, model=None):
         output = batch['outputs']
         probs = functional.softmax(output.clamp(min=-25, max=25), dim=-1)
@@ -83,6 +100,11 @@ class MaxNonabstainProb(Confidence):
 
 
 class SumNonabstainProb(Confidence):
+    """
+    returns ```1 -``` the abstention probability as confidence
+
+    """
+
     def __call__(self, batch, model=None):
         output = batch['outputs']
         probs = functional.softmax(output.clamp(min=-25, max=25), dim=-1)
@@ -90,6 +112,16 @@ class SumNonabstainProb(Confidence):
 
 
 class MCDropoutConfidence(Confidence):
+    """
+    MC Dropout (See: https://arxiv.org/pdf/1506.02142.pdf)
+    User can specify a class attibute ```n_forward_passes``` upon construction.
+    The model would then perform inference on an example ```n_forward_passes``` times.
+
+    There are two ways of calculating the confidence, specified by the ```aggregator``` argument in the constructor:
+    ```mean```: averaging the ground truth probabilities in the output
+    ```var```: The inverse of the variance of the ground truth probabilities.
+    
+    """
     def __init__(self, aggregator, n_forward_passes):
         super().__init__()
         self.n_forward_passes = n_forward_passes
@@ -114,27 +146,30 @@ class MCDropoutConfidence(Confidence):
         confs = self.combo_fn(pred_probs)
         return confs
 
-"""
-class PosttrainedConfidence(Confidence):
-    def __init__(self, task, config, base_model):
-        super().__init__()
-        calib_trainer = BasicTrainer(config,
-                                     BalancedLoader(CalibrationLoader(base_model, task.init_validation_loader(config['bsz']))),
-                                     BalancedLoader(CalibrationLoader(base_model, task.init_train_loader(config['bsz']))),
-                                     conf_fn=random_confidence)
-        self.confidence_model, _ = calib_trainer()
-        self.ident = "pt"
-
-    def __call__(self, batch, model=None):
-        self.confidence_model.eval()
-        with torch.no_grad():
-            calibrator_out = self.confidence_model.lite_forward(batch['inputs'])
-            dists = softmax(calibrator_out['outputs'])
-            confs = dists[:, -1]
-        return confs
-"""
-
 class TrustScore(Confidence):
+    """
+    (See: https://arxiv.org/abs/1805.11783,
+     code adopted from https://github.com/google/TrustScore/blob/master/trustscore/trustscore.py)
+    a nearest-neighbor
+    based confidence function. First, the training in
+    stances are converted4 into vector encodings, and
+    grouped according to their gold labels. Outliers
+    are then filtered from each labeled group. Specifi
+    cally, they sort the vectors (i.e. points in Rd space)
+    by the radius of the minimal ball centered at that
+    vector that contains k points from their labeled
+    group. The percentage ```alpha``` ∈ [0, 1] of points with
+    the largest such radii (i.e. the outliers) are removed.
+    This filtered set5 is called an ```alpha```-high density set.
+    The confidence assigned to an instance prediction,
+    called TRUSTSCORE, is the ratio of (a) the distance
+    between the instance’s vector encoding and the 296
+    closest α-high density set of a non-predicted label, 
+    (b) the distance between the instance’s vector en
+    coding and the α-high density set of the predicted 
+    label.
+
+    """
     def __init__(self, k, alpha, max_sample_size=1000):
         super().__init__()
         self.k = k

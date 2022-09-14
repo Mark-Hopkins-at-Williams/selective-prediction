@@ -4,6 +4,15 @@ from spred.hub import spred_hub
 from spred.loss import init_loss_fn
 
 def init_model(model_config, regularizer, include_abstain):
+    """
+    ```init_model``` streamlines the model construction process.
+
+    Params:
+    ```model_config```: Dict
+    ```regularizer```: Callable
+    ```include_abstain```: bool, whether to include an abstention logit
+
+    """
     architecture = model_config['name']
     params = {k: model_config[k] for k in model_config
               if k not in ['name', 'loss']}
@@ -19,7 +28,10 @@ def init_model(model_config, regularizer, include_abstain):
 
 
 class SelectiveModel(nn.Module):
+    """
+    Abstract class: models for selective prediction tasks
 
+    """
     def __init__(self, incl_abstain):
         super().__init__()
         self.epoch = 0
@@ -38,7 +50,10 @@ class SelectiveModel(nn.Module):
 
 
 class Feedforward(SelectiveModel):
+    """
+    The feed-forward layer for selective prediction
 
+    """
     def __init__(self, input_size, hidden_sizes, output_size,
                  loss_f, incl_abstain):
         super().__init__(incl_abstain)
@@ -55,9 +70,17 @@ class Feedforward(SelectiveModel):
         self.loss_f = loss_f
 
     def notify(self, epoch):
+        """
+        Notifies the current epoch
+
+        """
         self.loss_f.notify(epoch)
 
     def initial_layers(self, input_vec):
+        """
+        The linear layer for the prediction
+
+        """
         nextout = input_vec
         for layer in self.linears:
             nextout = layer(nextout)
@@ -66,6 +89,10 @@ class Feedforward(SelectiveModel):
         return nextout
 
     def final_layers(self, input_vec, orig_input_vec, compute_conf):
+        """
+        the confidence extraction process for selective prediction
+
+        """
         nextout = self.final(input_vec)
         if compute_conf:
             confidences = self.confidence_extractor({'inputs': orig_input_vec['inputs'],
@@ -101,7 +128,10 @@ class Feedforward(SelectiveModel):
 
 
 class PretrainedTransformer(SelectiveModel):
+    """
+    Pre-trained Transformers for selective Prediction
 
+    """
     def __init__(self, base_model, output_size, incl_abstain):
         super().__init__(incl_abstain)
         self.output_size = output_size + 1 if self.include_abstain() else output_size
@@ -140,6 +170,10 @@ class PretrainedTransformer(SelectiveModel):
 
 
 class RegularizedModel(SelectiveModel):
+    """
+    Selective models with a regularizer
+    
+    """
 
     def __init__(self, base_model, regularizer, incl_abstain):
         super().__init__(incl_abstain)

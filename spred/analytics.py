@@ -1,3 +1,8 @@
+"""
+```analytics.py``` implements evaluation management tools for this project.
+"""
+
+
 import os
 import sys
 from sklearn import metrics
@@ -15,6 +20,23 @@ from datasets import load_metric
 from random import shuffle
 
 class EvaluationResult:
+    """
+    Evaluation is the abstraction of the evaluation results from a single evaluation (
+    e.g. end-of-epoch validation metrics from one epoch)
+    One can access the values of a ```EvaluationResult``` like a distionary,
+    return the data in the form of a dictionary,
+    equated to another ```EvaluationResult``` object,
+    merge fields with another ```EvaluationResult``` object,
+
+    ```EvaluationResult``` also implment static methods that process a list of ```EvaluationResult```'s.
+    Those methods include:
+    - ```merge```/ ```all```: Stores the value of each field in each ```EvaluationResult``` in the list as a list value in a
+                 new ```EvaluationResult``` object
+    - ```median```: computes the median of a list of ```EvaluationResult```'s for each field (if applicable).
+    - ```averaged```: computes the mean of a list of ```EvaluationResult```'s for each field (if applicable).
+
+    
+    """
     def __init__(self, result_dict):
         self.result_dict = result_dict
 
@@ -71,6 +93,17 @@ class EvaluationResult:
         return EvaluationResult(result)
 
 class EpochResult:
+    """
+    ```EpochResult``` abstracts the result from a single epoch during training, which includes three fields
+    - ```epoch```: the current epoch number
+    - ```train_loss```: the training loss
+    - ```validation_result```: a ```EvaluationResult``` that contains evaluation metrics from validation
+
+    One can also equate a ```EpochResult``` to another (```__eq__```), return itself in dictionary format (```as_dict```),
+    construct a ```EpochResult``` from a dictionary (```from_dict```), compute the mean and median across a list
+    (```averaged``` and ```median```)
+
+    """
 
     def __init__(self, epoch, train_loss, validation_result):
         self.epoch = epoch
@@ -127,6 +160,13 @@ class EpochResult:
         return EpochResult.from_dict(d)
 
 class ExperimentResult:
+    """
+    ExperimentResult abstracts the information needed for one experiment. It contains four fields:
+    - ```config```: the experimental config
+    - ```training_results```: ```EpochResult``` from training loops
+    - ```training_time```: elapsed training time
+    - ```confidence_results```: selective prediction evaluation metrics
+    """
 
     def __init__(self, config, epoch_results, eval_results, training_time):
         self.config = config
@@ -155,6 +195,16 @@ class ExperimentResult:
 
 
 class ResultDatabase:
+    """
+    ```ResultDatabase``` abstracts a list of ```ExperimentResult```'s
+    One can construct a ```ResultDatabase``` object from a ```json``` file (```load```).
+    Conversely, one can also store a ```ResultDatabase``` as a ```json``` file (```save```).
+
+    ```summary``` computes descriptive statisitics such as mean or median for a list of evaluation results,
+    and returns those statistics as a ```ExperimentResult``` object with the same fields.
+
+    ```as_dataframe``` compiles all the ```ExperimentResult```'s as rows in a ```pandas``` ```Dataframe```
+    """
     def __init__(self, experiment_results):
         self.results = experiment_results
 
@@ -214,7 +264,17 @@ class ResultDatabase:
         return pd.DataFrame(data=dict(data))
 
 
+##################
+"""
+Below starts the utility functions for this module
+
+"""
+
 def get_task_abbrev(config):
+    """
+    Takes a config dictionary and returns the abbreviation (```str```) for the task
+
+    """
     task = config['task']['name'] if 'task' in config else "-"
     if task == 'glue':
         task = config['task']['subtask']
@@ -222,6 +282,11 @@ def get_task_abbrev(config):
 
 
 def get_conf_abbrev(cconfig):
+    """
+    This construct an abbreviation for the entire experiment config
+    See the comments below to get a sense what the string would look like
+
+    """
     if cconfig['name'] == 'ts':
         return 'trustscore'
         # return 'ts({}, {})'.format(cconfig['alpha'], cconfig['max_sample_size'])
@@ -238,6 +303,10 @@ def get_conf_abbrev(cconfig):
         return cconfig['name']
 
 def get_loss_abbrev(config):
+    """
+    returns the abbreviation for the loss function
+
+    """
     if 'regularizer' not in config:
         return 'basic'
     else:
@@ -255,6 +324,10 @@ def get_loss_abbrev(config):
 
 
 def show_training_dashboard(exp_result):
+    """
+    Plot the Dashboard to monitor the training process
+
+    """
     fig, (ax1, ax2) = plt.subplots(2, sharex='all')
     fig.suptitle('Training Dashboard', fontsize='18')
     indexed_results = [(i+1, r) for (i, r) in enumerate(exp_result.epoch_results)]
@@ -276,6 +349,9 @@ def show_training_dashboard(exp_result):
 
 
 def plot_training_metric(exp_results, metric_name):
+    """
+    plot the training metrics
+    """
     colors = iter(['red', 'orange', 'yellow', 'green', 'blue']*20)
     fig, ax = plt.subplots()
     fig.suptitle('Training Dashboard', fontsize='18')
@@ -291,6 +367,9 @@ def plot_training_metric(exp_results, metric_name):
     plt.show()
 
 def plot_evaluation_metric(result_db, metric_name):
+    """
+    plot the evaluation metrics
+    """
     df = result_db.as_dataframe()
     with open('final_results.csv', 'w') as writer:
         df = df.sort_values(by=['method'])
@@ -303,6 +382,11 @@ def plot_evaluation_metric(result_db, metric_name):
 
 
 def compete(df, metric_name, method1, baseline):
+    """
+    Compares a chosen ```baseline``` to another method.
+    store improvement likelihood to a dataframe
+
+    """
     df1 = df[df['method']==method1]
     df2 = df[df['method']==baseline]
     df1 = df1[['task', metric_name]]
@@ -331,6 +415,10 @@ def compete(df, metric_name, method1, baseline):
     return compete_df
 
 def create_versus_df(result_df, metric_name, baseline, methods):
+    """
+    compare a collection of methods to a baseline using ```compete```
+
+    """
     sub_dfs = []
     for method in methods:
         sub_dfs.append(compete(result_df, metric_name, method, baseline))
@@ -338,6 +426,9 @@ def create_versus_df(result_df, metric_name, baseline, methods):
 
 
 def viz_versus(result_db, metric_name):
+    """
+    visualize versus results from ```create_versus_df```
+    """
     baseline = 'basic (max_prob)'
     methods = ['basic (mcdv)',
                'basic (mcdm)',
@@ -402,6 +493,10 @@ def main(directory, metric_name):
     # viz_versus(result_db, metric_name)
 
 if __name__ == '__main__':
+    """
+    Run versus analytics by specifying result directory
+    
+    """
     direc = sys.argv[1]
     metric = sys.argv[2]
     main(direc, metric)

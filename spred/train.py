@@ -17,6 +17,13 @@ from spred.hub import spred_hub
 class BasicTrainer:
 
     def __init__(self, config, train_loader, validation_loader, conf_fn):
+        """
+        config: Dict, training configuration
+        train_loader: ```Loader```
+        validation_loader: ```Loader```
+        conf_fn: Callable, confidence function
+
+        """
         self.config = config
         self.optimizer = None
         self.scheduler = None
@@ -38,9 +45,11 @@ class BasicTrainer:
                        else torch.device("cpu"))
 
     def init_decoder(self):
+        """configures the decoder"""
         return Decoder(self.include_abstain)
 
     def init_model(self):
+        """Configures the model"""
         model = init_model(self.config['model'],
                            self.regularizer,
                            self.include_abstain)
@@ -48,6 +57,7 @@ class BasicTrainer:
         return model
 
     def init_optimizer_and_scheduler(self, model):
+        """configures the optmizer and scheduler"""
         def init_optimizer():
             optim_constrs = {'sgd': optim.SGD,
                              'adamw': AdamW}
@@ -78,6 +88,7 @@ class BasicTrainer:
         init_scheduler()
 
     def __call__(self):
+        """run the training process"""
         start_time = time.time()
         print("Training with config:")
         print(self.config)
@@ -108,6 +119,7 @@ class BasicTrainer:
         return top_model, epoch_results, elapsed_time
 
     def epoch_step(self, model):
+        """propagate info to parts of training that needs to know that the epoch is done"""
         running_loss = 0.
         denom = 0
         for batch in tqdm(self.train_loader, total=len(self.train_loader)):
@@ -126,6 +138,11 @@ class BasicTrainer:
         return running_loss / denom
 
     def validate_and_analyze(self, model):
+        """
+        generate validation analytics.
+        Validation happens at the end of every epoch
+        
+        """
         model.eval()
         results = list(self.decoder(model, self.validation_loader))
         validation_loss = self.decoder.get_loss()
