@@ -1,5 +1,17 @@
-spred (a python package for selective prediction)
--------------------------------------------------
+<div align="center">
+    <br>
+    <h1>spred</h1>
+    <p>
+    an apache 2.0 python package for selective prediction
+    </p>
+    <hr/>
+</div>
+<p align="center">
+    <a href="https://github.com/Mark-Hopkins-at-Williams/selective-prediction/blob/main/LICENSE">
+        <img alt="License" src="https://img.shields.io/badge/license-apache2.0-blue">
+    </a>
+    <br/>
+</p>
 
 ## Installing the spred package:
 

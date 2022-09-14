@@ -1,3 +1,8 @@
+"""
+An ```Experiment``` object configures and runs an experiment.
+
+"""
+
 import json
 import time
 import spred.tasks.normals
@@ -11,6 +16,12 @@ from spred.train import BasicTrainer
 
 
 class Experiment:
+    """
+    Parameters:
+    ```config```: Dict, the configuration of the experiment
+    ```task```: specifies the task of the the experiment. If not specified, ```self.task``` is
+                inferred from ```config```
+    """
 
     def __init__(self, config, task=None):
         self.config = config
@@ -25,6 +36,9 @@ class Experiment:
 
 
     def n_trials(self):
+        """
+        returns the number times the experiment is repeated
+        """
         if 'n_trials' in self.config:
             return self.config['n_trials']
         else:
@@ -32,11 +46,19 @@ class Experiment:
 
 
     def init_trainer(self, conf_fn):
+        """
+        conf_fn: Callable, the confidence function
+
+        """
         return BasicTrainer(self.config, self.train_loader,
                             self.validation_loader, conf_fn=conf_fn)
 
 
     def run(self):
+        """
+        runs the experiment
+
+        """
         training_conf_fn = MaxProb()
         if 'regularizer' in self.config:
             if self.config['regularizer']['name'] == 'dac':
@@ -66,6 +88,14 @@ class Experiment:
 
     @classmethod
     def from_json(cls, model_config_path, train_config_path):
+        """
+        construct an ```Experiment``` from ```json``` files.
+
+        Params:
+        ```model_config_path```: path to the model config file
+        ```train_config_path```: path to the Trainer config file
+
+        """
         with open(model_config_path, 'r') as f:
             model_config = json.load(f)
         with open(train_config_path, 'r') as f:
